@@ -1,8 +1,8 @@
 #![allow(non_camel_case_types)] // allowing All Caps names for constants
 
 use std::fmt;
-// #[derive(Debug)]
-// #[derive(PartialEq)] // to make comparison operation possible for these codes
+#[derive(Debug)]
+#[derive(PartialEq)] // to make comparison operation possible for these codes
 #[repr(i32)]
 pub enum LexActivatorStatusCode {
     LA_OK = 0,
@@ -17,8 +17,8 @@ pub enum LexActivatorStatusCode {
     LA_RELEASE_UPDATE_AVAILABLE_NOT_ALLOWED = 32,
 }
 
-// #[derive(Debug)]
-// #[derive(PartialEq)]
+#[derive(Debug)]
+#[derive(PartialEq)]
 #[repr(i32)]
 pub enum LexActivatorErrorCode {
     LA_E_FILE_PATH = 40,

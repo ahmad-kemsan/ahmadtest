@@ -13,7 +13,7 @@ pub mod error_code;
 // use crate::error_code::*;
 
 
-// #[derive(Debug)] 
+#[derive(Debug)] 
 pub struct LicenseMeterAttribute {
     pub name: String,
     pub allowed_uses: u32,
