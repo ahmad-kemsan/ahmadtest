@@ -22,6 +22,12 @@ fn main() {
     println!("cargo:rustc-link-search=native={}", library_dir);
     println!("cargo:rustc-link-lib=static={}", library_name);
 
+    // frameworks
+    println!("cargo:rustc-link-lib=framework=CoreFoundation");
+    println!("cargo:rustc-link-lib=framework=Security");
+    println!("cargo:rustc-link-lib=framework=Foundation");
+
+
     // Set the target directory as the place to put the resulting binary
     println!("cargo:rustc-link-search={}", target_dir.display());
 }
