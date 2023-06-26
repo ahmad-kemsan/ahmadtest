@@ -2,13 +2,13 @@
 use std::ffi::*;
 use serde::{Deserialize};
 
-use extern_functions::*;
-use error_code::*;
-use string_utils::*;
+pub use extern_functions::*;
+pub use error_code::*;
+pub use string_utils::*;
 
-mod extern_functions;
-mod error_code;
-mod string_utils;
+pub mod extern_functions;
+pub mod error_code;
+pub mod string_utils;
 
 
 // use crate::extern_functions;
