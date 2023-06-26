@@ -13,7 +13,7 @@ pub mod error_code;
 // use crate::error_code::*;
 
 
-#[derive(Debug)] 
+// #[derive(Debug)] 
 pub struct LicenseMeterAttribute {
     pub name: String,
     pub allowed_uses: u32,
@@ -155,6 +155,28 @@ pub fn set_product_data(product_data: &str) -> Result<(), LexActivatorErrorCode>
     }
 }
 
+/// Sets the product id of your application. This function must be called on every start of your program before
+/// any other functions are called, with the exception of SetProductFile() or SetProductData() function.
+/// 
+/// # Arguments
+///
+/// * `product_id` - A `string` value representing the unique product id of your application as mentioned
+///                  on the product page in the dashboard.
+///
+/// * `permission_flags` - depending upon whether your application requires admin/root
+///                        permissions to run or not, this parameter can have one of the following
+///                        values: LA_SYSTEM, LA_USER, LA_IN_MEMORY
+/// # Returns
+///
+/// Returns `Result<(), LexActivatorErrorCode>`. If the product_id is set successfully,
+/// `Ok(())` is returned. If an error occurs, an `Err` variant
+/// containing a `LexActivatorErrorCode` is returned.
+///
+/// # Panics
+///
+/// This function will panic if the input string contains the null character.
+///
+ 
 pub fn set_product_id(product_id: &str, permission_flags: PermissionFlags) -> Result<(), LexActivatorErrorCode> {
     let status: i32;
     let c_flags: c_uint = permission_flags as u32 as c_uint;
@@ -176,6 +198,26 @@ pub fn set_product_id(product_id: &str, permission_flags: PermissionFlags) -> Re
     } 
 }
 
+/// In case you want to change the default directory used by LexActivator to
+/// store the activation data on Linux and macOS, this function can be used to
+/// set a different directory.
+/// 
+/// # Arguments
+/// 
+/// * `data_dir` - A `string` value representing the absolute path of the directory
+///               where LexActivator should store the activation data.
+/// 
+/// # Returns
+/// 
+/// Returns `Result<(), LexActivatorErrorCode>`. If the data directory is set successfully,
+/// `Ok(())` is returned. If an error occurs, an `Err` variant
+/// containing a `LexActivatorErrorCode` is returned.
+/// 
+/// # Panics
+/// 
+/// This function will panic if the input string contains the null character.
+/// 
+
 pub fn set_data_directory(data_dir: &str) -> Result<(), LexActivatorErrorCode> {
 
     let status: i32;
@@ -196,6 +238,24 @@ pub fn set_data_directory(data_dir: &str) -> Result<(), LexActivatorErrorCode> {
         return Err(LexActivatorErrorCode::from(status));
     }
 }
+
+/// In case you don't want to use the LexActivator's advanced
+/// device fingerprinting algorithm, this function can be used to set a custom device fingerprint.
+/// 
+/// # Arguments
+/// 
+/// * `device_fingerprint` - A `string` value representing the custom device fingerprint of the user's device.
+/// 
+/// # Returns
+/// 
+/// Returns `Result<(), LexActivatorErrorCode>`. If the custom device fingerprint is set successfully,
+/// `Ok(())` is returned. If an error occurs, an `Err` variant
+/// containing a `LexActivatorErrorCode` is returned.
+/// 
+/// # Panics
+/// 
+/// This function will panic if the input string contains the null character.
+///
 
 pub fn set_custom_device_fingerprint(device_fingerprint: &str) -> Result<(), LexActivatorErrorCode> {
 
