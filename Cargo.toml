@@ -8,9 +8,9 @@ description = "just to test rust crates"
 license = "MIT"
 build = "build.rs"
 
-[lib]
+# [lib]
 # path = "src/lexactivator.rs"
-crate-type = ["cdylib"]
+# crate-type = ["cdylib"]
 
 [dependencies]
 libc = "0.2"
