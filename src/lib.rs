@@ -54,60 +54,6 @@ pub enum PermissionFlags {
     LA_IN_MEMORY = 4,
 }
 
-// // --------------------------- String operations ------------------------
-
-// // fn string_to_wstring(key: &str) -> *const u16 {
-// //     let utf16: Vec<u16> = key.encode_utf16().chain(std::iter::once(0)).collect();
-// //     utf16.as_ptr()
-// // }
-
-// // diff between unwrap() and expect() or the above method match{} lies only in error handling as unwrap simply returns the default
-// // msg of the error while expect() allows us to specify the error msg. They all panic iof the conversion faisl due to some error.
-
-// pub fn string_to_cstring_a(key: &str) -> CString {
-//     let key_cstring: CString = CString::new(key).unwrap();
-//     key_cstring
-// }
-
-// pub fn string_to_cstring(key: &str) -> CString {
-//     let license_key_result: Result<CString, NulError> = CString::new(key);
-//     let c_license_key: CString = match license_key_result {
-//         Ok(cstring) => cstring,
-//         Err(err) => {
-//             panic!("Failed to convert Rust string to C string: {}", err);
-//         }
-//     };
-//     c_license_key
-// }
-
-// // fn to_utf16_A(key: &str) -> *const u16 {
-// //     let utf16_sequence: Vec<u16> = key.encode_utf16().chain(std::iter::once(0)).collect();
-// //     let utf16_ptr = utf16_sequence.as_ptr();
-// //     utf16_ptr
-// // }
-
-// pub fn to_utf16(product_id: &str) -> Vec<u16> {
-//     let utf16: Vec<u16> = product_id
-//         .encode_utf16()
-//         .chain(std::iter::once(0))
-//         .collect::<Vec<_>>();
-//     utf16
-// }
-
-// pub fn utf16_to_string(buffer: &[u16]) -> String {
-//     let string = String::from_utf16_lossy(buffer);
-//     string.trim_end_matches('\0').to_owned()
-// }
-// pub fn c_char_to_string(buffer: &[c_char]) -> String {
-//     let c_str = unsafe { CStr::from_ptr(buffer.as_ptr()) };
-//     c_str.to_string_lossy().into_owned()
-// }
-
-// pub fn u32_to_bool(value: u32) -> bool {
-//     value != 0
-// }
-
-
 type CallbackType = extern "C" fn(u32);
 
 extern "C" {
@@ -121,7 +67,7 @@ pub fn set_product_file(file_path: &str) -> Result<(), LexActivatorErrorCode> {
     #[cfg(windows)]
     {
         let c_file_path = to_utf16(file_path);
-        status = unsafe { extern_functions::SetProductFile(c_file_path.as_ptr()) };
+        status = unsafe { SetProductFile(c_file_path.as_ptr()) };
     }
     #[cfg(not(windows))]
     {
@@ -142,12 +88,12 @@ pub fn set_product_data(product_data: &str) -> Result<(), LexActivatorErrorCode>
     #[cfg(windows)]
     {
         let c_product_data = to_utf16(product_data);
-        status = unsafe { extern_functions::SetProductData(c_product_data.as_ptr()) };
+        status = unsafe { SetProductData(c_product_data.as_ptr()) };
     }
     #[cfg(not(windows))]
     {
         let c_product_data = string_to_cstring(product_data);
-        status = unsafe { extern_functions::SetProductData(c_product_data.as_ptr()) };
+        status = unsafe { SetProductData(c_product_data.as_ptr()) };
     }
     // print!("setProductData status: {}", status);
     if status == 0 {
@@ -157,8 +103,9 @@ pub fn set_product_data(product_data: &str) -> Result<(), LexActivatorErrorCode>
     }
 }
 
-/// Sets the product id of your application. This function must be called on every start of your program before
-/// any other functions are called, with the exception of SetProductFile() or SetProductData() function.
+/// Sets the product id of your application. 
+/// 
+/// This function must be called on every start of your program before any other functions are called, with the exception of SetProductFile() or SetProductData() function.
 /// 
 /// # Arguments
 ///
@@ -170,13 +117,7 @@ pub fn set_product_data(product_data: &str) -> Result<(), LexActivatorErrorCode>
 ///                        values: LA_SYSTEM, LA_USER, LA_IN_MEMORY
 /// # Returns
 ///
-/// Returns `Result<(), LexActivatorErrorCode>`. If the product_id is set successfully,
-/// `Ok(())` is returned. If an error occurs, an `Err` variant
-/// containing a `LexActivatorErrorCode` is returned.
-///
-/// # Panics
-///
-/// This function will panic if the input string contains the null character.
+/// Returns `Ok(())` if the data directory is set successfully, If an error occurs, an `Err` containing the `LexActivatorErrorCode`is returned.
 ///
  
 pub fn set_product_id(product_id: &str, permission_flags: PermissionFlags) -> Result<(), LexActivatorErrorCode> {
@@ -190,8 +131,22 @@ pub fn set_product_id(product_id: &str, permission_flags: PermissionFlags) -> Re
     #[cfg(not(windows))]
     {
         
-        let c_product_id = string_to_cstring(product_id);
-        status = unsafe { SetProductId(c_product_id.as_ptr(), c_flags) };
+        let c_product_id = string_to_cstringx(product_id);
+        match c_product_id {
+            Ok(cstring) => {
+                // Use the valid CString `cstring` for further processing
+               
+                status = unsafe { SetProductId(cstring.as_ptr(), c_flags) };
+                
+            }
+            Err(error_code) => {
+                // Handle the error indicated by `error_code`
+                // println!("Error occurred: {:?}", error_code);
+                return Err(LexActivatorErrorCode::from(error_code));
+            }
+        }
+
+        // status = unsafe { SetProductId(c_product_id.as_ptr(), c_flags) };
     }
     if status == 0 {
         Ok(())
@@ -211,13 +166,7 @@ pub fn set_product_id(product_id: &str, permission_flags: PermissionFlags) -> Re
 /// 
 /// # Returns
 /// 
-/// Returns `Result<(), LexActivatorErrorCode>`. If the data directory is set successfully,
-/// `Ok(())` is returned. If an error occurs, an `Err` variant
-/// containing a `LexActivatorErrorCode` is returned.
-/// 
-/// # Panics
-/// 
-/// This function will panic if the input string contains the null character.
+/// Returns `Ok(())` if the data directory is set successfully. If an error occurs, an `Err` variant containing a `LexActivatorErrorCode` is returned.
 /// 
 
 pub fn set_data_directory(data_dir: &str) -> Result<(), LexActivatorErrorCode> {
@@ -226,12 +175,13 @@ pub fn set_data_directory(data_dir: &str) -> Result<(), LexActivatorErrorCode> {
     #[cfg(windows)]
     {
         let c_data_dir = to_utf16(data_dir);
-        status = unsafe { extern_functions::SetDataDirectory(c_data_dir.as_ptr()) };
+        status = unsafe { SetDataDirectory(c_data_dir.as_ptr()) };
     }
     #[cfg(not(windows))]
     {
         let c_data_dir = string_to_cstring(data_dir);
-        status = unsafe { extern_functions::SetDataDirectory(c_data_dir.as_ptr()) };
+
+        status = unsafe { SetDataDirectory(c_data_dir.as_ptr()) };
     }
     // print!("SetDataDirectory status: {}", status);
     if status == 0 {
@@ -266,12 +216,12 @@ pub fn set_custom_device_fingerprint(device_fingerprint: &str) -> Result<(), Lex
     {
         // let c_product_id = get_utf16_ptr(product_id);
         let c_device_fingerprint = to_utf16(device_fingerprint);
-        status = unsafe { extern_functions::SetCustomDeviceFingerprint(c_device_fingerprint.as_ptr()) };
+        status = unsafe { SetCustomDeviceFingerprint(c_device_fingerprint.as_ptr()) };
     }
     #[cfg(not(windows))]
     {
         let c_device_fingerprint = string_to_cstring(device_fingerprint);
-        status = unsafe { extern_functions::SetCustomDeviceFingerprint(c_device_fingerprint.as_ptr()) };
+        status = unsafe { SetCustomDeviceFingerprint(c_device_fingerprint.as_ptr()) };
     }
     print!("SetDataDirectory status: {}", status);
     if status == 0 {
@@ -280,6 +230,16 @@ pub fn set_custom_device_fingerprint(device_fingerprint: &str) -> Result<(), Lex
         return Err(LexActivatorErrorCode::from(status));
     }
 }
+
+/// Sets the license key for activation.
+///
+/// # Arguments
+///
+/// * `license_key` - The license key string.
+///
+/// # Returns
+///
+/// Returns `Ok(())` if the license key is set successfully, otherwise returns an `Err` containing the `LexActivatorErrorCode`.
  
 pub fn set_license_key(license_key: &str) -> Result<(), LexActivatorErrorCode> {
 
@@ -287,12 +247,12 @@ pub fn set_license_key(license_key: &str) -> Result<(), LexActivatorErrorCode> {
     #[cfg(windows)]
     {
         let c_license_key = to_utf16(license_key);
-        status = unsafe { extern_functions::SetLicenseKey(c_license_key.as_ptr()) };
+        status = unsafe { SetLicenseKey(c_license_key.as_ptr()) };
     }
     #[cfg(not(windows))]
     {
         let c_license_key = string_to_cstring(license_key);
-        status = unsafe { extern_functions::SetLicenseKey(c_license_key.as_ptr()) };
+        status = unsafe { SetLicenseKey(c_license_key.as_ptr()) };
     }
     print!("SetDataDirectory status: {}", status);
     if status == 0 {
@@ -301,6 +261,17 @@ pub fn set_license_key(license_key: &str) -> Result<(), LexActivatorErrorCode> {
         return Err(LexActivatorErrorCode::from(status));
     }
 }
+
+/// Sets the license user credentials for activation.
+///
+/// # Arguments
+///
+/// * `email` - The email associated with the user.
+/// * `password` - The password for the user.
+///
+/// # Returns
+///
+/// Returns `Ok(())` if the license user credentials are set successfully, otherwise returns an `Err` containing the `LexActivatorErrorCode`.
 
 pub fn set_license_user_credential(email: &str, password: &str) -> Result<(), LexActivatorErrorCode> {
     
@@ -309,13 +280,13 @@ pub fn set_license_user_credential(email: &str, password: &str) -> Result<(), Le
     {
         let c_email = to_utf16(email);
         let c_password = to_utf16(password);
-        status = unsafe { extern_functions::SetLicenseUserCredential(c_email.as_ptr(), c_password.as_ptr()) };
+        status = unsafe { SetLicenseUserCredential(c_email.as_ptr(), c_password.as_ptr()) };
     }
     #[cfg(not(windows))]
     {
         let c_email = string_to_cstring(email);
         let c_password = string_to_cstring(password);
-        status = unsafe { extern_functions::SetLicenseUserCredential(c_email.as_ptr(), c_password.as_ptr()) };
+        status = unsafe { SetLicenseUserCredential(c_email.as_ptr(), c_password.as_ptr()) };
     }
     print!("SetLicenseUserCredential status: {}", status);
     if status == 0 {
@@ -325,9 +296,24 @@ pub fn set_license_user_credential(email: &str, password: &str) -> Result<(), Le
     }
 }
 
+/// Sets the license callback function.
+/// Whenever the server sync occurs in a separate thread, and server returns the response,
+/// license callback function gets invoked with the following status codes:
+/// LA_OK, LA_EXPIRED, LA_SUSPENDED, LA_E_REVOKED, LA_E_ACTIVATION_NOT_FOUND, LA_E_MACHINE_FINGERPRINT
+/// LA_E_AUTHENTICATION_FAILED, LA_E_COUNTRY, LA_E_INET, LA_E_SERVER,LA_E_RATE_LIMIT, LA_E_IP, 
+/// LA_E_RELEASE_VERSION_NOT_ALLOWED, LA_E_RELEASE_VERSION_FORMAT
+///
+/// # Arguments
+///
+/// * `callback` - The callback function to be set.
+///
+/// # Returns
+///
+/// Returns `Ok(())` if the license callback is set successfully, otherwise returns an `Err` containing the `LexActivatorErrorCode`.
+
 pub fn set_license_callback(callback: CallbackType) -> Result<(), LexActivatorErrorCode> {
     let status: i32;
-    status = unsafe { extern_functions::SetLicenseCallback(callback) };
+    status = unsafe { SetLicenseCallback(callback) };
     if status == 0 {
         Ok(())
     } else {
@@ -335,15 +321,36 @@ pub fn set_license_callback(callback: CallbackType) -> Result<(), LexActivatorEr
     }
 }
 
+/// Sets the activation lease duration.
+///
+/// # Arguments
+///
+/// * `lease_duration` - The lease duration in seconds.
+///
+/// # Returns
+///
+/// Returns `Ok(())` if the activation lease duration is set successfully, otherwise returns an `Err` containing the `LexActivatorErrorCode`.
+
 pub fn set_activation_lease_duration(lease_duration: u32) -> Result<(), LexActivatorErrorCode> {
     let c_lease_duration: c_uint = lease_duration as c_uint;
-    let status = unsafe { extern_functions::SetActivationLeaseDuration(c_lease_duration) };
+    let status = unsafe { SetActivationLeaseDuration(c_lease_duration) };
     if status == 0 {
         Ok(())
     } else {
         return Err(LexActivatorErrorCode::from(status));
     }
 }
+
+/// Sets the activation metadata.
+///
+/// # Arguments
+///
+/// * `key` - The key of the metadata.
+/// * `value` - The value of the metadata.
+///
+/// # Returns
+///
+/// Returns `Ok(())` if the activation metadata is set successfully, otherwise returns an `Err` containing the `LexActivatorErrorCode`.
 
 pub fn set_activation_metadata(key: &str, value: &str) -> Result<(), LexActivatorErrorCode>  {
     let status: i32;
@@ -351,13 +358,13 @@ pub fn set_activation_metadata(key: &str, value: &str) -> Result<(), LexActivato
     {
         let c_key = to_utf16(key);
         let c_value = to_utf16(value);
-        status = unsafe { extern_functions::SetActivationMetadata(c_key.as_ptr(), c_value.as_ptr()) };
+        status = unsafe { SetActivationMetadata(c_key.as_ptr(), c_value.as_ptr()) };
     }
     #[cfg(not(windows))]
     {
         let c_key = string_to_cstring(key);
         let c_value = string_to_cstring(value);
-        status = unsafe { extern_functions::SetActivationMetadata(c_key.as_ptr(), c_value.as_ptr()) };
+        status = unsafe { SetActivationMetadata(c_key.as_ptr(), c_value.as_ptr()) };
     }
     print!("SetActivationMetadata status: {}", status);
     if status == 0 {
@@ -367,19 +374,30 @@ pub fn set_activation_metadata(key: &str, value: &str) -> Result<(), LexActivato
     }
 }
 
+/// Sets the trial activation metadata.
+///
+/// # Arguments
+///
+/// * `key` - The key of the metadata.
+/// * `value` - The value of the metadata.
+///
+/// # Returns
+///
+/// Returns `Ok(())` if the trial activation metadata is set successfully, otherwise returns an `Err` containing the `LexActivatorErrorCode`.
+
 pub fn set_trial_activation_metadata(key: &str, value: &str) -> Result<(), LexActivatorErrorCode> {
     let status: i32;
     #[cfg(windows)]
     {
         let c_key = to_utf16(key);
         let c_value = to_utf16(value);
-        status = unsafe { extern_functions::SetTrialActivationMetadata(c_key.as_ptr(), c_value.as_ptr()) };
+        status = unsafe { SetTrialActivationMetadata(c_key.as_ptr(), c_value.as_ptr()) };
     }
     #[cfg(not(windows))]
     {
         let c_key = string_to_cstring(key);
         let c_value = string_to_cstring(value);
-        status = unsafe { extern_functions::SetTrialActivationMetadata(c_key.as_ptr(), c_value.as_ptr()) };
+        status = unsafe { SetTrialActivationMetadata(c_key.as_ptr(), c_value.as_ptr()) };
     }
     print!("SetTrialActivationMetadata status: {}", status);
     if status == 0 {
@@ -389,17 +407,27 @@ pub fn set_trial_activation_metadata(key: &str, value: &str) -> Result<(), LexAc
     }
 }
 
-pub fn set_release_version(version: &str) -> Result<(), LexActivatorErrorCode> {
+/// Sets the release version.
+///
+/// # Arguments
+///
+/// * `release_version` - The release version.
+///
+/// # Returns
+///
+/// Returns `Ok(())` if the release version is set successfully, otherwise returns an `Err` containing the `LexActivatorErrorCode`.
+
+pub fn set_release_version(release_version: &str) -> Result<(), LexActivatorErrorCode> {
     let status: i32;
     #[cfg(windows)]
     {
-        let c_version = to_utf16(version);
-        status = unsafe { extern_functions::SetReleaseVersion(c_version.as_ptr()) };
+        let c_release_version = to_utf16(release_version);
+        status = unsafe { SetReleaseVersion(c_release_version.as_ptr()) };
     }
     #[cfg(not(windows))]
     {
-        let c_version = string_to_cstring(version);
-        status = unsafe { extern_functions::SetReleaseVersion(c_version.as_ptr()) };
+        let c_release_version = string_to_cstring(release_version);
+        status = unsafe { SetReleaseVersion(c_release_version.as_ptr()) };
     }
     print!("SetReleaseVersion status: {}", status);
     if status == 0 {
@@ -409,9 +437,19 @@ pub fn set_release_version(version: &str) -> Result<(), LexActivatorErrorCode> {
     }
 }
 
+/// Sets the release published date.
+///
+/// # Arguments
+///
+/// * `release_published_date` - The release published date as a UNIX timestamp.
+///
+/// # Returns
+///
+/// Returns `Ok(())` if the release published date is set successfully, otherwise returns an `Err` containing the `LexActivatorErrorCode`.
+
 pub fn set_release_published_date(release_published_date: u32) -> Result<(), LexActivatorErrorCode>{
     let c_release_published_date: c_uint = release_published_date as c_uint;
-    let status = unsafe { extern_functions::SetReleasePublishedDate(c_release_published_date) };
+    let status = unsafe { SetReleasePublishedDate(c_release_published_date) };
     if status == 0 {
         Ok(())
     } else {
@@ -419,17 +457,27 @@ pub fn set_release_published_date(release_published_date: u32) -> Result<(), Lex
     }
 }
 
-pub fn set_release_platform(platform: &str) -> Result<(), LexActivatorErrorCode> {
+/// Sets the release platform.
+///
+/// # Arguments
+///
+/// * `platform` - The release platform.
+///
+/// # Returns
+///
+/// Returns `Ok(())` if the release platform is set successfully, otherwise returns an `Err` containing the `LexActivatorErrorCode`.
+
+pub fn set_release_platform(release_platform: &str) -> Result<(), LexActivatorErrorCode> {
     let status: i32;
     #[cfg(windows)]
     {
-        let c_platform = to_utf16(platform);
-        status = unsafe { extern_functions::SetReleasePlatform(c_platform.as_ptr()) };
+        let c_release_platform = to_utf16(release_platform);
+        status = unsafe { SetReleasePlatform(c_release_platform.as_ptr()) };
     }
     #[cfg(not(windows))]
     {
-        let c_platform = string_to_cstring(platform);
-        status = unsafe { extern_functions::SetReleasePlatform(c_platform.as_ptr()) };
+        let c_release_platform = string_to_cstring(release_platform);
+        status = unsafe { SetReleasePlatform(c_release_platform.as_ptr()) };
     }
     print!("SetReleasePlatform status: {}", status);
     if status == 0 {
@@ -439,17 +487,27 @@ pub fn set_release_platform(platform: &str) -> Result<(), LexActivatorErrorCode>
     }
 }
 
-pub fn set_release_channel(channel: &str) -> Result<(), LexActivatorErrorCode> {
+/// Sets the release channel e.g. stable, beta
+///
+/// # Arguments
+///
+/// * `release_channel` - The release channel.
+///
+/// # Returns
+///
+/// Returns `Ok(())` if the release channel is set successfully, otherwise returns an `Err` containing the `LexActivatorErrorCode`.
+
+pub fn set_release_channel(release_channel: &str) -> Result<(), LexActivatorErrorCode> {
     let status: i32;
     #[cfg(windows)]
     {
-        let c_channel = to_utf16(channel);
-        status = unsafe { extern_functions::SetReleaseChannel(c_channel.as_ptr()) };
+        let c_release_channel = to_utf16(release_channel);
+        status = unsafe { SetReleaseChannel(c_release_channel.as_ptr()) };
     }
     #[cfg(not(windows))]
     {
-        let c_channel = string_to_cstring(channel);
-        status = unsafe { extern_functions::SetReleaseChannel(c_channel.as_ptr()) };
+        let c_release_channel = string_to_cstring(release_channel);
+        status = unsafe { SetReleaseChannel(c_release_channel.as_ptr()) };
     }
     print!("SetReleaseChannel status: {}", status);
     if status == 0 {
@@ -459,18 +517,29 @@ pub fn set_release_channel(channel: &str) -> Result<(), LexActivatorErrorCode> {
     }
 }
 
+/// Sets the offline activation request meter attribute uses.
+///
+/// # Arguments
+///
+/// * `name` - The name of the meter attribute.
+/// * `uses` - The number of uses.
+///
+/// # Returns
+///
+/// Returns `Ok(())` if the offline activation request meter attribute uses are set successfully, otherwise returns an `Err` containing the `LexActivatorErrorCode`.
+
 pub fn set_offline_activation_request_meter_attribute_uses(name: &str, uses: i32) -> Result<(), LexActivatorErrorCode>{
     let status: i32;
     let c_uses: c_uint = uses as c_uint;
     #[cfg(windows)]
     {
         let c_name = to_utf16(name);
-        status = unsafe { extern_functions::SetOfflineActivationRequestMeterAttributeUses(c_name.as_ptr(), c_uses) };
+        status = unsafe { SetOfflineActivationRequestMeterAttributeUses(c_name.as_ptr(), c_uses) };
     }
     #[cfg(not(windows))]
     {
         let c_name = string_to_cstring(name);
-        status = unsafe { extern_functions::SetOfflineActivationRequestMeterAttributeUses(c_name.as_ptr(), c_uses) };
+        status = unsafe { SetOfflineActivationRequestMeterAttributeUses(c_name.as_ptr(), c_uses) };
     }
     print!("SetOfflineActivationRequestMeterAttributeUses status: {}", status);
     if status == 0 {
@@ -480,17 +549,27 @@ pub fn set_offline_activation_request_meter_attribute_uses(name: &str, uses: i32
     }
 }
 
+/// Sets the network proxy.
+///
+/// # Arguments
+///
+/// * `proxy` - The network proxy.
+///
+/// # Returns
+///
+/// Returns `Ok(())` if the network proxy is set successfully, otherwise returns an `Err` containing the `LexActivatorErrorCode`.
+
 pub fn set_network_proxy(proxy: &str) -> Result<(), LexActivatorErrorCode> {
     let status: i32;
     #[cfg(windows)]
     {
         let c_proxy = to_utf16(proxy);
-        status = unsafe { extern_functions::SetNetworkProxy(c_proxy.as_ptr()) };
+        status = unsafe { SetNetworkProxy(c_proxy.as_ptr()) };
     }
     #[cfg(not(windows))]
     {
         let c_proxy = string_to_cstring(proxy);
-        status = unsafe { extern_functions::SetNetworkProxy(c_proxy.as_ptr()) };
+        status = unsafe { SetNetworkProxy(c_proxy.as_ptr()) };
     }
     print!("SetNetworkProxy status: {}", status);
     if status == 0 {
@@ -500,17 +579,27 @@ pub fn set_network_proxy(proxy: &str) -> Result<(), LexActivatorErrorCode> {
     }
 }
 
+/// Sets the Cryptlex host.
+///
+/// # Arguments
+///
+/// * `host` - The Cryptlex host.
+///
+/// # Returns
+///
+/// Returns `Ok(())` if the Cryptlex host is set successfully, otherwise returns an `Err` containing the `LexActivatorErrorCode`.
+
 pub fn set_cryptlex_host(host: &str) -> Result<(), LexActivatorErrorCode> {
     let status: i32;
     #[cfg(windows)]
     {
         let c_host = to_utf16(host);
-        status = unsafe { extern_functions::SetCryptlexHost(c_host.as_ptr()) };
+        status = unsafe { SetCryptlexHost(c_host.as_ptr()) };
     }
     #[cfg(not(windows))]
     {
         let c_host = string_to_cstring(host);
-        status = unsafe { extern_functions::SetCryptlexHost(c_host.as_ptr()) };
+        status = unsafe { SetCryptlexHost(c_host.as_ptr()) };
     }
     print!("SetCryptlexHost status: {}", status);
     if status == 0 {
@@ -522,6 +611,26 @@ pub fn set_cryptlex_host(host: &str) -> Result<(), LexActivatorErrorCode> {
 
 // ------------------- Getter Functions --------------------
 
+/// Gets the product metadata as set in the dashboard.
+/// This is available for trial as well as license activations.
+/// 
+/// # Arguments
+/// 
+/// * `key` - metadata key to retrieve the value
+/// 
+/// # Returns
+/// 
+/// Returns a `Result` indicating the success or failure of the operation. If the operation
+/// succeeds, it returns `Ok` with the metadata value. If an error occurs, it returns `Err`
+/// with a `LexActivatorErrorCode` representing the specific error.
+/// 
+/// # Errors
+///
+/// The function may return an error if:
+///
+/// - The product key is invalid or not found.
+/// - There is an issue with the license validation process.
+
 pub fn get_product_metadata(key: &str) -> Result<String, LexActivatorErrorCode> {
     
     let status: i32;
@@ -531,14 +640,14 @@ pub fn get_product_metadata(key: &str) -> Result<String, LexActivatorErrorCode> 
     {
         let mut buffer: [u16; LENGTH] = [0; LENGTH];
         let utf16_ptr =  to_utf16(key);
-        status = unsafe { extern_functions::GetProductMetadata(utf16_ptr.as_ptr(), buffer.as_mut_ptr(), LENGTH as c_uint) };
+        status = unsafe { GetProductMetadata(utf16_ptr.as_ptr(), buffer.as_mut_ptr(), LENGTH as c_uint) };
         product_metadata_value = utf16_to_string(&buffer);
     }
     #[cfg(not(windows))]
     {
         let mut buffer: [c_char; LENGTH] = [0; LENGTH];
         let key_cstring: CString  = string_to_cstring(key);
-        status = unsafe { extern_functions::GetProductMetadata(key_cstring.as_ptr(), buffer.as_mut_ptr(), LENGTH as c_uint) };
+        status = unsafe { GetProductMetadata(key_cstring.as_ptr(), buffer.as_mut_ptr(), LENGTH as c_uint) };
         product_metadata_value = c_char_to_string(&buffer);
     }
     if status == 0 {
@@ -548,31 +657,29 @@ pub fn get_product_metadata(key: &str) -> Result<String, LexActivatorErrorCode> 
     }
 }
 
-pub fn get_product_version_name() -> Result<Option<String>, LexActivatorErrorCode> {
+
+/// Retrieves the name of the product version.
+///
+/// # Returns
+///
+/// Returns `Ok(String)` with the name of the product version if it is retrieved successfully, otherwise returns an `Err` containing the `LexActivatorErrorCode`.
+
+pub fn get_product_version_name() -> Result<String, LexActivatorErrorCode> {
     let status: i32;
     const LENGTH: usize = 256;
-    let product_version_name: Option<String>;
+    let product_version_name: String;
     #[cfg(windows)]
     {
         let mut buffer: [u16; LENGTH] = [0; LENGTH];
-        status = unsafe { extern_functions::GetProductVersionName(buffer.as_mut_ptr(), LENGTH as c_uint) };
-        // product_version_name = utf16_to_string(&buffer);
-        product_version_name = if status == 0 {
-            Some(utf16_to_string(&buffer)) // Wrap the value in Some
-        } else {
-            None // No value, set to None
-        };
+        status = unsafe { GetProductVersionName(buffer.as_mut_ptr(), LENGTH as c_uint) };
+        product_version_name = utf16_to_string(&buffer);
+        
     }
     #[cfg(not(windows))]
     {
         let mut buffer: [c_char; LENGTH] = [0; LENGTH];
-        status = unsafe { extern_functions::GetProductVersionName(buffer.as_mut_ptr(), LENGTH as c_uint) };
-        // product_version_name = c_char_to_string(&buffer);
-        product_version_name = if status == 0 {
-            Some(c_char_to_string(&buffer)) // Wrap the value in Some
-        } else {
-            None // No value, set to None
-        };
+        status = unsafe { GetProductVersionName(buffer.as_mut_ptr(), LENGTH as c_uint) };
+        product_version_name = c_char_to_string(&buffer);
     }
     if status == 0 {
         Ok(product_version_name)
@@ -581,6 +688,12 @@ pub fn get_product_version_name() -> Result<Option<String>, LexActivatorErrorCod
     }
 }
 
+/// Retrieves the display name of the product version.
+///
+/// # Returns
+///
+/// Returns `Ok(String)` with the display name of the product version if it is retrieved successfully, otherwise returns an `Err` containing the `LexActivatorErrorCode`.
+
 pub fn get_product_version_display_name() -> Result<String, LexActivatorErrorCode> {
     let status: i32;
     const LENGTH: usize = 256; // Set the appropriate buffer length
@@ -588,13 +701,13 @@ pub fn get_product_version_display_name() -> Result<String, LexActivatorErrorCod
     #[cfg(windows)]
     {
         let mut buffer: [u16; LENGTH] = [0; LENGTH];
-        status = unsafe { extern_functions::GetProductVersionDisplayName(buffer.as_mut_ptr(), LENGTH as c_uint) };
+        status = unsafe { GetProductVersionDisplayName(buffer.as_mut_ptr(), LENGTH as c_uint) };
         product_version_display_name = utf16_to_string(&buffer);
     }
     #[cfg(not(windows))]
     {
         let mut buffer: [c_char; LENGTH] = [0; LENGTH];
-        status = unsafe { extern_functions::GetProductVersionDisplayName(buffer.as_mut_ptr(), LENGTH as c_uint) };
+        status = unsafe { GetProductVersionDisplayName(buffer.as_mut_ptr(), LENGTH as c_uint) };
         product_version_display_name = c_char_to_string(&buffer);
     }
     println!("Product Version Display Name: {}", product_version_display_name);
@@ -606,6 +719,16 @@ pub fn get_product_version_display_name() -> Result<String, LexActivatorErrorCod
     }
 }
 
+/// Retrieves the feature flag of a specific product version.
+///
+/// # Arguments
+///
+/// * `name` - The name of the feature flag.
+///
+/// # Returns
+///
+/// Returns `Ok(ProductVersionFeatureFlag)` with the feature flag information if it is retrieved successfully, otherwise returns an `Err` containing the `LexActivatorErrorCode`.
+
 pub fn get_product_version_feature_flag(name: &str) -> Result<ProductVersionFeatureFlag, LexActivatorErrorCode> {
     let status: i32;
     const LENGTH: usize = 256; // Set the appropriate buffer length
@@ -615,14 +738,14 @@ pub fn get_product_version_feature_flag(name: &str) -> Result<ProductVersionFeat
     {
         let c_name = to_utf16(name);
         let mut buffer: [u16; LENGTH] = [0; LENGTH];
-        status = unsafe { extern_functions::GetProductVersionFeatureFlag(c_name.as_ptr(), &mut c_enabled, buffer.as_mut_ptr(), LENGTH as c_uint) };
+        status = unsafe { GetProductVersionFeatureFlag(c_name.as_ptr(), &mut c_enabled, buffer.as_mut_ptr(), LENGTH as c_uint) };
         data = utf16_to_string(&buffer);
     }
     #[cfg(not(windows))]
     {
         let c_name = string_to_cstring(name);
         let mut buffer: [c_char; LENGTH] = [0; LENGTH];
-        status = unsafe { extern_functions::GetProductVersionFeatureFlag(c_name.as_ptr(), &mut c_enabled, buffer.as_mut_ptr(), LENGTH as c_uint) };
+        status = unsafe { GetProductVersionFeatureFlag(c_name.as_ptr(), &mut c_enabled, buffer.as_mut_ptr(), LENGTH as c_uint) };
         data = c_char_to_string(&buffer);
     }
     let product_version_feature_flag = ProductVersionFeatureFlag {
@@ -640,6 +763,16 @@ pub fn get_product_version_feature_flag(name: &str) -> Result<ProductVersionFeat
     
 }
 
+/// Retrieves the metadata associated with a license.
+///
+/// # Arguments
+///
+/// * `key` - The metadata key.
+///
+/// # Returns
+///
+/// Returns `Ok(String)` with the metadata value if it is retrieved successfully, otherwise returns an `Err` containing the `LexActivatorErrorCode`.
+
 pub fn get_license_metadata(key: &str) -> Result<String, LexActivatorErrorCode> {
     let status: i32;
     const LENGTH: usize = 256; // Set the appropriate buffer length
@@ -648,14 +781,14 @@ pub fn get_license_metadata(key: &str) -> Result<String, LexActivatorErrorCode> 
     {
         let mut buffer: [u16; LENGTH] = [0; LENGTH];
         let c_key =  to_utf16(key);
-        status = unsafe { extern_functions::GetLicenseMetadata(c_key.as_ptr(), buffer.as_mut_ptr(), LENGTH as c_uint) };
+        status = unsafe { GetLicenseMetadata(c_key.as_ptr(), buffer.as_mut_ptr(), LENGTH as c_uint) };
         license_metadata = utf16_to_string(&buffer);
     }
     #[cfg(not(windows))]
     {
         let mut buffer: [c_char; LENGTH] = [0; LENGTH];
         let c_key: CString  = string_to_cstring(key);
-        status = unsafe { extern_functions::GetLicenseMetadata(c_key.as_ptr(), buffer.as_mut_ptr(), LENGTH as c_uint) };
+        status = unsafe { GetLicenseMetadata(c_key.as_ptr(), buffer.as_mut_ptr(), LENGTH as c_uint) };
         license_metadata = c_char_to_string(&buffer);
     }
     println!("License Metadata: {}", license_metadata);
@@ -667,6 +800,16 @@ pub fn get_license_metadata(key: &str) -> Result<String, LexActivatorErrorCode> 
     }
 }
 
+/// Retrieves the meter attribute of a license.
+///
+/// # Arguments
+///
+/// * `name` - The name of the meter attribute.
+///
+/// # Returns
+///
+/// Returns `Ok(LicenseMeterAttribute)` with the meter attribute information if it is retrieved successfully, otherwise returns an `Err` containing the `LexActivatorErrorCode`.
+
 pub fn get_license_meterattribute(name: &str) -> Result<LicenseMeterAttribute, LexActivatorErrorCode> {
     let status: i32;
     let mut c_allowed_uses: c_uint = 0;
@@ -675,12 +818,12 @@ pub fn get_license_meterattribute(name: &str) -> Result<LicenseMeterAttribute, L
     #[cfg(windows)]
     {
         let c_name =  to_utf16(name);
-        status = unsafe { extern_functions::GetLicenseMeterAttribute(c_name.as_ptr(), &mut c_allowed_uses, &mut c_total_uses, &mut c_gross_uses) };
+        status = unsafe { GetLicenseMeterAttribute(c_name.as_ptr(), &mut c_allowed_uses, &mut c_total_uses, &mut c_gross_uses) };
     }
     #[cfg(not(windows))]
     {
         let c_name = string_to_cstring(name);
-        status = unsafe { extern_functions::GetLicenseMeterAttribute(c_name.as_ptr(), &mut c_allowed_uses, &mut c_total_uses, &mut c_gross_uses) };
+        status = unsafe { GetLicenseMeterAttribute(c_name.as_ptr(), &mut c_allowed_uses, &mut c_total_uses, &mut c_gross_uses) };
     }
     let meter_attribute = LicenseMeterAttribute {
         name: name.to_string(),
@@ -696,6 +839,12 @@ pub fn get_license_meterattribute(name: &str) -> Result<LicenseMeterAttribute, L
     }
 }
 
+/// Retrieves the license key.
+///
+/// # Returns
+///
+/// Returns `Ok(String)` with the license key if it is retrieved successfully, otherwise returns an `Err` containing the `LexActivatorErrorCode`.
+
 pub fn get_license_key() -> Result<String, LexActivatorErrorCode> {
     let status: i32;
     const LENGTH: usize = 256; // Set the appropriate buffer length
@@ -703,13 +852,13 @@ pub fn get_license_key() -> Result<String, LexActivatorErrorCode> {
     #[cfg(windows)]
     {
         let mut buffer: [u16; LENGTH] = [0; LENGTH];
-        status = unsafe { extern_functions::GetLicenseKey(buffer.as_mut_ptr(), LENGTH as c_uint) };
+        status = unsafe { GetLicenseKey(buffer.as_mut_ptr(), LENGTH as c_uint) };
         license_key = utf16_to_string(&buffer);
     }
     #[cfg(not(windows))]
     {
         let mut buffer: [c_char; LENGTH] = [0; LENGTH];
-        status = unsafe { extern_functions::GetLicenseKey(buffer.as_mut_ptr(), LENGTH as c_uint) };
+        status = unsafe { GetLicenseKey(buffer.as_mut_ptr(), LENGTH as c_uint) };
         license_key = c_char_to_string(&buffer);
     }
     // println!("License Key: {}", license_key);
@@ -721,9 +870,15 @@ pub fn get_license_key() -> Result<String, LexActivatorErrorCode> {
     }
 }
 
+/// Retrieves the number of allowed activations for the license.
+///
+/// # Returns
+///
+/// Returns `Ok(u32)` with the number of allowed activations if it is retrieved successfully, otherwise returns an `Err` containing the `LexActivatorErrorCode`.
+
 pub fn get_license_allowed_activations() -> Result<u32, LexActivatorErrorCode> {
     let mut allowed_activations: c_uint = 0;
-    let status = unsafe { extern_functions::GetLicenseAllowedActivations(&mut allowed_activations) };
+    let status = unsafe { GetLicenseAllowedActivations(&mut allowed_activations) };
     println!("Allowed Activations: {}", allowed_activations);
     println!("Result: {}", status);
     if status == 0 {
@@ -733,9 +888,15 @@ pub fn get_license_allowed_activations() -> Result<u32, LexActivatorErrorCode> {
     }
 }
 
+/// Retrieves the total number of activations for the license.
+///
+/// # Returns
+///
+/// Returns `Ok(u32)` with the total number of activations if it is retrieved successfully, otherwise returns an `Err` containing the `LexActivatorErrorCode`.
+
 pub fn get_license_total_activations() -> Result<u32, LexActivatorErrorCode> {
     let mut total_activations: c_uint = 0;
-    let status = unsafe { extern_functions::GetLicenseTotalActivations(&mut total_activations) };
+    let status = unsafe { GetLicenseTotalActivations(&mut total_activations) };
     println!("Total Activations: {}", total_activations);
     println!("Result: {}", status);
     if status == 0 {
@@ -745,9 +906,15 @@ pub fn get_license_total_activations() -> Result<u32, LexActivatorErrorCode> {
     }
 }
 
+/// Retrieves the expiry date of the license.
+///
+/// # Returns
+///
+/// Returns `Ok(u32)` with the expiry date (in seconds since Unix epoch) if it is retrieved successfully, otherwise returns an `Err` containing the `LexActivatorErrorCode`.
+
 pub fn get_license_expiry_date() -> Result<u32, LexActivatorErrorCode> {
     let mut expiry_date: c_uint = 0;
-    let status = unsafe { extern_functions::GetLicenseExpiryDate(&mut expiry_date) };
+    let status = unsafe { GetLicenseExpiryDate(&mut expiry_date) };
     println!("Expiry Date: {}", expiry_date);
     println!("Result: {}", status);
     if status == 0 {
@@ -757,9 +924,15 @@ pub fn get_license_expiry_date() -> Result<u32, LexActivatorErrorCode> {
     }
 }
 
+/// Retrieves the maintenance expiry date of the license.
+///
+/// # Returns
+///
+/// Returns `Ok(u32)` with the maintenance expiry date (in seconds since Unix epoch) if it is retrieved successfully, otherwise returns an `Err` containing the `LexActivatorErrorCode`.
+
 pub fn get_license_maintenance_expiry_date() -> Result<u32, LexActivatorErrorCode> {
     let mut expiry_date: c_uint = 0;
-    let status = unsafe { extern_functions::GetLicenseMaintenanceExpiryDate(&mut expiry_date) };
+    let status = unsafe { GetLicenseMaintenanceExpiryDate(&mut expiry_date) };
     println!("Maintenance Expiry Date: {}", expiry_date);
     println!("Result: {}", status);
     if status == 0 {
@@ -769,6 +942,12 @@ pub fn get_license_maintenance_expiry_date() -> Result<u32, LexActivatorErrorCod
     }
 }
 
+/// Retrieves the maximum allowed release version for the license.
+///
+/// # Returns
+///
+/// Returns `Ok(String)` with the maximum allowed release version if it is retrieved successfully, otherwise returns an `Err` containing the `LexActivatorErrorCode`.
+
 pub fn get_license_max_allowed_release_version() -> Result<String, LexActivatorErrorCode> {
     let status: i32;
     const LENGTH: usize = 256; // Set the appropriate buffer length
@@ -776,13 +955,13 @@ pub fn get_license_max_allowed_release_version() -> Result<String, LexActivatorE
     #[cfg(windows)]
     {
         let mut buffer: [u16; LENGTH] = [0; LENGTH];
-        status = unsafe { extern_functions::GetLicenseMaxAllowedReleaseVersion(buffer.as_mut_ptr(), LENGTH as c_uint) };
+        status = unsafe { GetLicenseMaxAllowedReleaseVersion(buffer.as_mut_ptr(), LENGTH as c_uint) };
         max_allowed_release_version = utf16_to_string(&buffer);
     }
     #[cfg(not(windows))]
     {
         let mut buffer: [c_char; LENGTH] = [0; LENGTH];
-        status = unsafe { extern_functions::GetLicenseMaxAllowedReleaseVersion(buffer.as_mut_ptr(), LENGTH as c_uint) };
+        status = unsafe { GetLicenseMaxAllowedReleaseVersion(buffer.as_mut_ptr(), LENGTH as c_uint) };
         max_allowed_release_version = c_char_to_string(&buffer);
     }
     println!("Max Allowed Release Version: {}", max_allowed_release_version);
@@ -794,6 +973,12 @@ pub fn get_license_max_allowed_release_version() -> Result<String, LexActivatorE
     }
 }
 
+/// Retrieves the user's email associated with the license.
+///
+/// # Returns
+///
+/// Returns `Ok(String)` with the user's email if it is retrieved successfully, otherwise returns an `Err` containing the `LexActivatorErrorCode`.
+
 pub fn get_license_user_email() -> Result<String, LexActivatorErrorCode> {
     let status: i32;
     const LENGTH: usize = 256; // Set the appropriate buffer length
@@ -801,13 +986,13 @@ pub fn get_license_user_email() -> Result<String, LexActivatorErrorCode> {
     #[cfg(windows)]
     {
         let mut buffer: [u16; LENGTH] = [0; LENGTH];
-        status = unsafe { extern_functions::GetLicenseUserEmail(buffer.as_mut_ptr(), LENGTH as c_uint) };
+        status = unsafe { GetLicenseUserEmail(buffer.as_mut_ptr(), LENGTH as c_uint) };
         user_email = utf16_to_string(&buffer);
     }
     #[cfg(not(windows))]
     {
         let mut buffer: [c_char; LENGTH] = [0; LENGTH];
-        status = unsafe { extern_functions::GetLicenseUserEmail(buffer.as_mut_ptr(), LENGTH as c_uint) };
+        status = unsafe { GetLicenseUserEmail(buffer.as_mut_ptr(), LENGTH as c_uint) };
         user_email = c_char_to_string(&buffer);
     }
     println!("User Email: {}", user_email);
@@ -819,6 +1004,12 @@ pub fn get_license_user_email() -> Result<String, LexActivatorErrorCode> {
     }
 }
 
+/// Retrieves the user's name associated with the license.
+///
+/// # Returns
+///
+/// Returns `Ok(String)` with the user's name if it is retrieved successfully, otherwise returns an `Err` containing the `LexActivatorErrorCode`.
+
 pub fn get_license_user_name() -> Result<String, LexActivatorErrorCode> {
     let status: i32;
     const LENGTH: usize = 256; // Set the appropriate buffer length
@@ -826,13 +1017,13 @@ pub fn get_license_user_name() -> Result<String, LexActivatorErrorCode> {
     #[cfg(windows)]
     {
         let mut buffer: [u16; LENGTH] = [0; LENGTH];
-        status = unsafe { extern_functions::GetLicenseUserName(buffer.as_mut_ptr(), LENGTH as c_uint) };
+        status = unsafe { GetLicenseUserName(buffer.as_mut_ptr(), LENGTH as c_uint) };
         user_name = utf16_to_string(&buffer);
     }
     #[cfg(not(windows))]
     {
         let mut buffer: [c_char; LENGTH] = [0; LENGTH];
-        status = unsafe { extern_functions::GetLicenseUserName(buffer.as_mut_ptr(), LENGTH as c_uint) };
+        status = unsafe { GetLicenseUserName(buffer.as_mut_ptr(), LENGTH as c_uint) };
         user_name = c_char_to_string(&buffer);
     }
     println!("User Name: {}", user_name);
@@ -844,6 +1035,12 @@ pub fn get_license_user_name() -> Result<String, LexActivatorErrorCode> {
     }
 }
 
+/// Retrieves the user's company associated with the license.
+///
+/// # Returns
+///
+/// Returns `Ok(String)` with the user's company if it is retrieved successfully, otherwise returns an `Err` containing the `LexActivatorErrorCode`.
+
 pub fn get_license_user_company() -> Result<String, LexActivatorErrorCode> {
     let status: i32;
     const LENGTH: usize = 256; // Set the appropriate buffer length
@@ -851,13 +1048,13 @@ pub fn get_license_user_company() -> Result<String, LexActivatorErrorCode> {
     #[cfg(windows)]
     {
         let mut buffer: [u16; LENGTH] = [0; LENGTH];
-        status = unsafe { extern_functions::GetLicenseUserCompany(buffer.as_mut_ptr(), LENGTH as c_uint) };
+        status = unsafe { GetLicenseUserCompany(buffer.as_mut_ptr(), LENGTH as c_uint) };
         user_company = utf16_to_string(&buffer);
     }
     #[cfg(not(windows))]
     {
         let mut buffer: [c_char; LENGTH] = [0; LENGTH];
-        status = unsafe { extern_functions::GetLicenseUserCompany(buffer.as_mut_ptr(), LENGTH as c_uint) };
+        status = unsafe { GetLicenseUserCompany(buffer.as_mut_ptr(), LENGTH as c_uint) };
         user_company = c_char_to_string(&buffer);
     }
     println!("User Company: {}", user_company);
@@ -869,6 +1066,16 @@ pub fn get_license_user_company() -> Result<String, LexActivatorErrorCode> {
     }
 }
 
+/// Retrieves the metadata value associated with the license user.
+///
+/// # Arguments
+///
+/// * `key` - The key of the metadata value.
+///
+/// # Returns
+///
+/// Returns `Ok(String)` with the metadata value if it is retrieved successfully, otherwise returns an `Err` containing the `LexActivatorErrorCode`.
+
 pub fn get_license_user_metadata(key: &str) -> Result<String, LexActivatorErrorCode> {
     let status: i32;
     const LENGTH: usize = 256; // Set the appropriate buffer length
@@ -877,14 +1084,14 @@ pub fn get_license_user_metadata(key: &str) -> Result<String, LexActivatorErrorC
     {
         let mut buffer: [u16; LENGTH] = [0; LENGTH];
         let c_key = to_utf16(key);
-        status = unsafe { extern_functions::GetLicenseUserMetadata(c_key.as_ptr(), buffer.as_mut_ptr(), LENGTH as c_uint) };
+        status = unsafe { GetLicenseUserMetadata(c_key.as_ptr(), buffer.as_mut_ptr(), LENGTH as c_uint) };
         user_metadata = utf16_to_string(&buffer);
     }
     #[cfg(not(windows))]
     {
         let mut buffer: [c_char; LENGTH] = [0; LENGTH];
         let c_key: CString  = string_to_cstring(key);
-        status = unsafe { extern_functions::GetLicenseUserMetadata(c_key.as_ptr(), buffer.as_mut_ptr(), LENGTH as c_uint) };
+        status = unsafe { GetLicenseUserMetadata(c_key.as_ptr(), buffer.as_mut_ptr(), LENGTH as c_uint) };
         user_metadata = c_char_to_string(&buffer);
     }
     println!("User Metadata: {}", user_metadata);
@@ -896,6 +1103,12 @@ pub fn get_license_user_metadata(key: &str) -> Result<String, LexActivatorErrorC
     }
 }
 
+/// Retrieves the organization name associated with the license.
+///
+/// # Returns
+///
+/// Returns `Ok(String)` with the organization name if it is retrieved successfully, otherwise returns an `Err` containing the `LexActivatorErrorCode`.
+
 pub fn get_license_organization_name() -> Result<String, LexActivatorErrorCode> {
     let status: i32;
     const LENGTH: usize = 256; // Set the appropriate buffer length
@@ -903,13 +1116,13 @@ pub fn get_license_organization_name() -> Result<String, LexActivatorErrorCode> 
     #[cfg(windows)]
     {
         let mut buffer: [u16; LENGTH] = [0; LENGTH];
-        status = unsafe { extern_functions::GetLicenseOrganizationName(buffer.as_mut_ptr(), LENGTH as c_uint) };
+        status = unsafe { GetLicenseOrganizationName(buffer.as_mut_ptr(), LENGTH as c_uint) };
         organization_name = utf16_to_string(&buffer);
     }
     #[cfg(not(windows))]
     {
         let mut buffer: [c_char; LENGTH] = [0; LENGTH];
-        status = unsafe { extern_functions::GetLicenseOrganizationName(buffer.as_mut_ptr(), LENGTH as c_uint) };
+        status = unsafe { GetLicenseOrganizationName(buffer.as_mut_ptr(), LENGTH as c_uint) };
         organization_name = c_char_to_string(&buffer);
     }
     println!("Organization Name: {}", organization_name);
@@ -921,6 +1134,12 @@ pub fn get_license_organization_name() -> Result<String, LexActivatorErrorCode> 
     }
 }
 
+/// Retrieves the organization address associated with the license.
+///
+/// # Returns
+///
+/// Returns `Ok(OrganizationAddress)` with the organization address if it is retrieved successfully, otherwise returns an `Err` containing the `LexActivatorErrorCode`.
+
 pub fn get_license_organization_address() -> Result<OrganizationAddress, LexActivatorErrorCode> {
     let status: i32;
     const LENGTH: usize = 256; // Set the appropriate buffer length
@@ -928,13 +1147,13 @@ pub fn get_license_organization_address() -> Result<OrganizationAddress, LexActi
     #[cfg(windows)]
     {
         let mut buffer: [u16; LENGTH] = [0; LENGTH];
-        status = unsafe { extern_functions::GetLicenseOrganizationAddressInternal(buffer.as_mut_ptr(), LENGTH as c_uint) };
+        status = unsafe { GetLicenseOrganizationAddressInternal(buffer.as_mut_ptr(), LENGTH as c_uint) };
         org_address_json = utf16_to_string(&buffer);
     }
     #[cfg(not(windows))]
     {
         let mut buffer: [c_char; LENGTH] = [0; LENGTH];
-        status = unsafe { extern_functions::GetLicenseOrganizationAddressInternal(buffer.as_mut_ptr(), LENGTH as c_uint) };
+        status = unsafe { GetLicenseOrganizationAddressInternal(buffer.as_mut_ptr(), LENGTH as c_uint) };
         org_address_json = c_char_to_string(&buffer);
     }
     let org_address: OrganizationAddress = serde_json::from_str(&org_address_json).expect("Failed to parse JSON");
@@ -948,6 +1167,12 @@ pub fn get_license_organization_address() -> Result<OrganizationAddress, LexActi
 
 }
 
+/// Retrieves the type of the license.
+///
+/// # Returns
+///
+/// Returns `Ok(String)` with the license type if it is retrieved successfully, otherwise returns an `Err` containing the `LexActivatorErrorCode`.
+
 pub fn get_license_type() -> Result<String, LexActivatorErrorCode> {
     let status: i32;
     const LENGTH: usize = 256; // Set the appropriate buffer length
@@ -955,13 +1180,13 @@ pub fn get_license_type() -> Result<String, LexActivatorErrorCode> {
     #[cfg(windows)]
     {
         let mut buffer: [u16; LENGTH] = [0; LENGTH];
-        status = unsafe { extern_functions::GetLicenseType(buffer.as_mut_ptr(), LENGTH as c_uint) };
+        status = unsafe { GetLicenseType(buffer.as_mut_ptr(), LENGTH as c_uint) };
         license_type = utf16_to_string(&buffer);
     }
     #[cfg(not(windows))]
     {
         let mut buffer: [c_char; LENGTH] = [0; LENGTH];
-        status = unsafe { extern_functions::GetLicenseType(buffer.as_mut_ptr(), LENGTH as c_uint) };
+        status = unsafe { GetLicenseType(buffer.as_mut_ptr(), LENGTH as c_uint) };
         license_type = c_char_to_string(&buffer);
     }
     println!("License type: {}", license_type);
@@ -973,6 +1198,16 @@ pub fn get_license_type() -> Result<String, LexActivatorErrorCode> {
     }
 }
 
+/// Retrieves the metadata value associated with the specified key for the activation.
+///
+/// # Arguments
+///
+/// * `key` - The key of the metadata value.
+///
+/// # Returns
+///
+/// Returns `Ok(String)` with the metadata value if it is retrieved successfully, otherwise returns an `Err` containing the `LexActivatorErrorCode`.
+
 pub fn get_activation_metadata(key: &str) -> Result<String, LexActivatorErrorCode> {
     let status: i32;
     const LENGTH: usize = 256; // Set the appropriate buffer length
@@ -981,14 +1216,14 @@ pub fn get_activation_metadata(key: &str) -> Result<String, LexActivatorErrorCod
     {
         let mut buffer: [u16; LENGTH] = [0; LENGTH];
         let c_key = to_utf16(key);
-        status = unsafe { extern_functions::GetActivationMetadata(c_key.as_ptr(), buffer.as_mut_ptr(), LENGTH as c_uint) };
+        status = unsafe { GetActivationMetadata(c_key.as_ptr(), buffer.as_mut_ptr(), LENGTH as c_uint) };
         activation_metadata = utf16_to_string(&buffer);
     }
     #[cfg(not(windows))]
     {
         let mut buffer: [c_char; LENGTH] = [0; LENGTH];
         let c_key: CString  = string_to_cstring(key);
-        status = unsafe { extern_functions::GetActivationMetadata(c_key.as_ptr(), buffer.as_mut_ptr(), LENGTH as c_uint) };
+        status = unsafe { GetActivationMetadata(c_key.as_ptr(), buffer.as_mut_ptr(), LENGTH as c_uint) };
         activation_metadata = c_char_to_string(&buffer);
     }
     println!("Activation Metadata: {}", activation_metadata);
@@ -999,6 +1234,12 @@ pub fn get_activation_metadata(key: &str) -> Result<String, LexActivatorErrorCod
         return Err(LexActivatorErrorCode::from(status));
     }
 }
+/// Retrieves the initial and current activation mode.
+///
+/// # Returns
+///
+/// Returns `Ok(ActivationMode)` with the initial and current activation mode if they are retrieved successfully, otherwise returns an `Err` containing the `LexActivatorErrorCode`.
+
 
 pub fn get_activation_mode() -> Result<ActivationMode, LexActivatorErrorCode> {
     let status: i32;
@@ -1009,7 +1250,7 @@ pub fn get_activation_mode() -> Result<ActivationMode, LexActivatorErrorCode> {
     {
         let mut initial_mode_buffer: [u16; LENGTH] = [0; LENGTH];
         let mut current_mode_buffer: [u16; LENGTH] = [0; LENGTH];
-        status = unsafe { extern_functions::GetActivationMode(initial_mode_buffer.as_mut_ptr(), LENGTH as c_uint, current_mode_buffer.as_mut_ptr(), LENGTH as c_uint) };
+        status = unsafe { GetActivationMode(initial_mode_buffer.as_mut_ptr(), LENGTH as c_uint, current_mode_buffer.as_mut_ptr(), LENGTH as c_uint) };
         initial_activation_mode = utf16_to_string(&initial_mode_buffer);
         current_activation_mode = utf16_to_string(&current_mode_buffer);
     }
@@ -1017,7 +1258,7 @@ pub fn get_activation_mode() -> Result<ActivationMode, LexActivatorErrorCode> {
     {
         let mut initial_mode_buffer: [c_char; LENGTH] = [0; LENGTH];
         let mut current_mode_buffer: [c_char; LENGTH] = [0; LENGTH];
-        status = unsafe { extern_functions::GetActivationMode(initial_mode_buffer.as_mut_ptr(), LENGTH as c_uint, current_mode_buffer.as_mut_ptr(), LENGTH as c_uint) };
+        status = unsafe { GetActivationMode(initial_mode_buffer.as_mut_ptr(), LENGTH as c_uint, current_mode_buffer.as_mut_ptr(), LENGTH as c_uint) };
         initial_activation_mode = c_char_to_string(&initial_mode_buffer);
         current_activation_mode = c_char_to_string(&current_mode_buffer);
     }
@@ -1034,19 +1275,29 @@ pub fn get_activation_mode() -> Result<ActivationMode, LexActivatorErrorCode> {
     }
 }
 
+/// Retrieves the number of uses of the specified metered attribute for the activation.
+///
+/// # Arguments
+///
+/// * `name` - The name of the metere attribute.
+///
+/// # Returns
+///
+/// Returns `Ok(u32)` with the number of uses of the metered attribute if it is retrieved successfully, otherwise returns an `Err` containing the `LexActivatorErrorCode`.
+
 pub fn get_activation_meter_attribute_uses(name: &str) -> Result<u32, LexActivatorErrorCode> {
     let status: i32;
     let mut count: c_uint = 0;
     #[cfg(windows)]
     {
         let c_name = to_utf16(name);
-        status = unsafe { extern_functions::GetActivationMeterAttributeUses(c_name.as_ptr(), &mut count,) };
+        status = unsafe { GetActivationMeterAttributeUses(c_name.as_ptr(), &mut count,) };
     }
     #[cfg(not(windows))]
     {
         // let mut buffer: [c_char; LENGTH] = [0; LENGTH];
         let c_name: CString  = string_to_cstring(name);
-        status = unsafe { extern_functions::GetActivationMeterAttributeUses(c_name.as_ptr(), &mut count) };
+        status = unsafe { GetActivationMeterAttributeUses(c_name.as_ptr(), &mut count) };
     }
     println!("Activation Metadata: {}", count);
     println!("Result: {}", status);
@@ -1057,10 +1308,16 @@ pub fn get_activation_meter_attribute_uses(name: &str) -> Result<u32, LexActivat
     }
 }
 
+/// Retrieves the expiry date of the server sync grace period for the activation.
+///
+/// # Returns
+///
+/// Returns `Ok(u32)` with the expiry date of the server sync grace period if it is retrieved successfully, otherwise returns an `Err` containing the `LexActivatorErrorCode`.
+
 pub fn get_server_sync_grace_period_expiry_date() -> Result<u32, LexActivatorErrorCode> {
     let status: i32;
     let mut expiry_date: c_uint = 0;
-    status = unsafe { extern_functions::GetServerSyncGracePeriodExpiryDate(&mut expiry_date) };
+    status = unsafe { GetServerSyncGracePeriodExpiryDate(&mut expiry_date) };
     println!("Server Sync Grace Period Expiry Date: {}", expiry_date);
     println!("Result: {}", status);
     if status == 0 {
@@ -1070,6 +1327,16 @@ pub fn get_server_sync_grace_period_expiry_date() -> Result<u32, LexActivatorErr
     }
 }
 
+/// Retrieves the metadata value associated with the specified key for the trial activation.
+///
+/// # Arguments
+///
+/// * `key` - The key of the metadata value.
+///
+/// # Returns
+///
+/// Returns `Ok(String)` with the metadata value if it is retrieved successfully, otherwise returns an `Err` containing the `LexActivatorErrorCode`.
+
 pub fn get_trial_activation_metadata(key: &str) -> Result<String, LexActivatorErrorCode> {
     let status: i32;
     const LENGTH: usize = 256; // Set the appropriate buffer length
@@ -1078,14 +1345,14 @@ pub fn get_trial_activation_metadata(key: &str) -> Result<String, LexActivatorEr
     {
         let mut buffer: [u16; LENGTH] = [0; LENGTH];
         let c_key = to_utf16(key);
-        status = unsafe { extern_functions::GetTrialActivationMetadata(c_key.as_ptr(), buffer.as_mut_ptr(), LENGTH as c_uint) };
+        status = unsafe { GetTrialActivationMetadata(c_key.as_ptr(), buffer.as_mut_ptr(), LENGTH as c_uint) };
         trial_activation_metadata = utf16_to_string(&buffer);
     }
     #[cfg(not(windows))]
     {
         let mut buffer: [c_char; LENGTH] = [0; LENGTH];
         let c_key: CString  = string_to_cstring(key);
-        status = unsafe { extern_functions::GetTrialActivationMetadata(c_key.as_ptr(), buffer.as_mut_ptr(), LENGTH as c_uint) };
+        status = unsafe { GetTrialActivationMetadata(c_key.as_ptr(), buffer.as_mut_ptr(), LENGTH as c_uint) };
         trial_activation_metadata = c_char_to_string(&buffer);
     }
     println!("Trial Activation Metadata: {}", trial_activation_metadata);
@@ -1097,10 +1364,16 @@ pub fn get_trial_activation_metadata(key: &str) -> Result<String, LexActivatorEr
     }
 }
 
+/// Retrieves the expiry date of the trial activation.
+///
+/// # Returns
+///
+/// Returns `Ok(u32)` with the expiry date of the trial activation if it is retrieved successfully, otherwise returns an `Err` containing the `LexActivatorErrorCode`.
+
 pub fn get_trial_expiry_date() -> Result<u32, LexActivatorErrorCode> {
     let status: i32;
     let mut trial_expiry_date: c_uint = 0;
-    status = unsafe { extern_functions::GetTrialExpiryDate(&mut trial_expiry_date) };
+    status = unsafe { GetTrialExpiryDate(&mut trial_expiry_date) };
     println!("Trial Expiry Date: {}", trial_expiry_date);
     println!("Result: {}", status);
     if status == 0 {
@@ -1109,6 +1382,11 @@ pub fn get_trial_expiry_date() -> Result<u32, LexActivatorErrorCode> {
         return Err(LexActivatorErrorCode::from(status));
     }
 }
+/// Retrieves the ID of the trial activation.
+///
+/// # Returns
+///
+/// Returns `Ok(String)` with the trial ID if it is retrieved successfully, otherwise returns an `Err` containing the `LexActivatorErrorCode`.
 
 pub fn get_trial_id() -> Result<String, LexActivatorErrorCode> {
     let status: i32;
@@ -1117,13 +1395,13 @@ pub fn get_trial_id() -> Result<String, LexActivatorErrorCode> {
     #[cfg(windows)]
     {
         let mut buffer: [u16; LENGTH] = [0; LENGTH];
-        status = unsafe { extern_functions::GetTrialId(buffer.as_mut_ptr(), LENGTH as c_uint) };
+        status = unsafe { GetTrialId(buffer.as_mut_ptr(), LENGTH as c_uint) };
         trial_id = utf16_to_string(&buffer);
     }
     #[cfg(not(windows))]
     {
         let mut buffer: [c_char; LENGTH] = [0; LENGTH];
-        status = unsafe { extern_functions::GetTrialId(buffer.as_mut_ptr(), LENGTH as c_uint) };
+        status = unsafe { GetTrialId(buffer.as_mut_ptr(), LENGTH as c_uint) };
         trial_id = c_char_to_string(&buffer);
     }
     println!("Trial ID: {}", trial_id);
@@ -1135,10 +1413,16 @@ pub fn get_trial_id() -> Result<String, LexActivatorErrorCode> {
     }
 }
 
+/// Retrieves the local expiry date of the trial activation.
+///
+/// # Returns
+///
+/// Returns `Ok(u32)` with the local expiry date of the trial activation if it is retrieved successfully, otherwise returns an `Err` containing the `LexActivatorErrorCode`.
+
 pub fn get_local_trial_expiry_date() -> Result<u32, LexActivatorErrorCode> {
     let status: i32;
     let mut trial_expiry_date: c_uint = 0;
-    status = unsafe { extern_functions::GetLocalTrialExpiryDate(&mut trial_expiry_date) };
+    status = unsafe { GetLocalTrialExpiryDate(&mut trial_expiry_date) };
     println!("Local Trial Expiry Date: {}", trial_expiry_date);
     println!("Result: {}", status);
     if status == 0 {
@@ -1148,6 +1432,13 @@ pub fn get_local_trial_expiry_date() -> Result<u32, LexActivatorErrorCode> {
     }
 }
 
+/// Retrieves the version of the LexActivator library.
+///
+/// # Returns
+///
+/// Returns `Ok(String)` with the library version if it is retrieved successfully, otherwise returns an `Err` containing the `LexActivatorErrorCode`.
+///
+
 pub fn get_library_version() -> Result<String, LexActivatorErrorCode> {
     let status: i32;
     const LENGTH: usize = 256; // Set the appropriate buffer length
@@ -1155,13 +1446,13 @@ pub fn get_library_version() -> Result<String, LexActivatorErrorCode> {
     #[cfg(windows)]
     {
         let mut buffer: [u16; LENGTH] = [0; LENGTH];
-        status = unsafe { extern_functions::GetLibraryVersion(buffer.as_mut_ptr(), LENGTH as c_uint) };
+        status = unsafe { GetLibraryVersion(buffer.as_mut_ptr(), LENGTH as c_uint) };
         library_version = utf16_to_string(&buffer);
     }
     #[cfg(not(windows))]
     {
         let mut buffer: [c_char; LENGTH] = [0; LENGTH];
-        status = unsafe { extern_functions::GetLibraryVersion(buffer.as_mut_ptr(), LENGTH as c_uint) };
+        status = unsafe { GetLibraryVersion(buffer.as_mut_ptr(), LENGTH as c_uint) };
         library_version = c_char_to_string(&buffer);
     }
     println!("Library Version: {}", library_version);
@@ -1175,14 +1466,35 @@ pub fn get_library_version() -> Result<String, LexActivatorErrorCode> {
 
 // ------------------ Action Functions ------------------
 
+/// Activates the license by contacting the Cryptlex servers. 
+/// 
+/// It validates the key and returns with encrypted and digitally signed token which it stores and uses to activate the application.
+/// 
+/// # Returns
+///
+/// Returns `Ok(LexActivatorStatusCode)` with the status code `LexActivatorStatusCode::LA_OK` if the license activation is successful. Otherwise, returns an `Err` containing the `LexActivatorErrorCode`.
+/// 
+/// # Remarks
+///  
 pub fn activate_license() -> Result<LexActivatorStatusCode, LexActivatorErrorCode> {
     let status = unsafe { extern_functions::ActivateLicense() };
-    println!("Activate License inside: {}", status);
-    match status {
-        0 => Ok(LexActivatorStatusCode::from(status)), // Include the desired status code
-        _ => Err(LexActivatorErrorCode::from(status)),
+    if status == 0 {
+        Ok(LexActivatorStatusCode::from(status))
+    } else {
+        return Err(LexActivatorErrorCode::from(status));
     }
 }
+
+/// Activates your licenses using the offline activation response file.
+/// 
+/// # Arguments
+/// 
+/// * `file_path` - The path of the offline activation response file.
+/// 
+/// # Returns
+/// 
+/// Returns `Ok(())` if the license activation is successful. Otherwise, returns an `Err` containing the `LexActivatorErrorCode`.
+///
 
 pub fn activate_license_offline(file_path: &str) -> Result<(), LexActivatorErrorCode> {
     let status: i32;
@@ -1196,12 +1508,22 @@ pub fn activate_license_offline(file_path: &str) -> Result<(), LexActivatorError
         let c_file_path: CString  = string_to_cstring(file_path);
         status = unsafe { extern_functions::ActivateLicenseOffline(c_file_path.as_ptr()) };
     }
-    println!("Activate License Offline inside: {}", status);
-    match status {
-        0 => Ok(()), // Include the desired status code
-        _ => Err(LexActivatorErrorCode::from(status)),
+    if status == 0 {
+        Ok(())
+    } else {
+        return Err(LexActivatorErrorCode::from(status));
     }
 }
+
+/// Generates an offline activation request file. The request file contains necessary information to perform offline activation. 
+///
+/// # Arguments
+///
+/// * `file_path` - The path to save the offline activation request file.
+///
+/// # Returns
+///
+/// Returns `Ok(())` if the offline activation request file generation is successful. Otherwise, returns an `Err` containing the `LexActivatorErrorCode`.
 
 pub fn generate_offline_activation_request(file_path: &str) -> Result<(), LexActivatorErrorCode> {
     let status: i32;
@@ -1215,21 +1537,40 @@ pub fn generate_offline_activation_request(file_path: &str) -> Result<(), LexAct
         let c_file_path: CString  = string_to_cstring(file_path);
         status = unsafe { extern_functions::GenerateOfflineActivationRequest(c_file_path.as_ptr()) };
     }
-    println!("Generate Offline Activation Request inside: {}", status);
-    match status {
-        0 => Ok(()), // Include the desired status code
-        _ => Err(LexActivatorErrorCode::from(status)),
+    if status == 0 {
+        Ok(())
+    } else {
+        return Err(LexActivatorErrorCode::from(status));
     }
 }
 
+/// Deactivates the license activation and frees up the corresponding activation slot by contacting the Cryptlex servers.
+///
+/// This function should be executed at the time of de-registration, ideally on a button click.
+///
+/// # Returns
+///
+/// Returns `Ok(LexActivatorStatusCode)` with the status code `LexActivatorStatusCode::LA_OK` if the license deactivation is successful. Otherwise, returns an `Err` containing the `LexActivatorErrorCode`.
+
 pub fn deactivate_license() -> Result<LexActivatorStatusCode, LexActivatorErrorCode> {
     let status = unsafe { extern_functions::DeactivateLicense() };
-    println!("Deactivate License inside: {}", status);
-    match status {
-        0 => Ok(LexActivatorStatusCode::from(status)), // Include the desired status code
-        _ => Err(LexActivatorErrorCode::from(status)),
+    if status == 0 {
+        Ok(LexActivatorStatusCode::from(status))
+    } else {
+        return Err(LexActivatorErrorCode::from(status));
     }
 }
+
+/// Generates the offline deactivation request needed for deactivation of the license in the dashboard and deactivates the license locally.
+///
+/// # Arguments
+///
+/// * `file_path` - The path to save the offline deactivation request file.
+///
+/// # Returns
+///
+/// Returns `Ok(())` if the offline deactivation request file generation is successful. Otherwise, returns an `Err` containing the `LexActivatorErrorCode`.
+
 
 pub fn generate_offline_deactivation_request(file_path: &str) -> Result<(), LexActivatorErrorCode> {
     let status: i32;
@@ -1243,39 +1584,81 @@ pub fn generate_offline_deactivation_request(file_path: &str) -> Result<(), LexA
         let c_file_path: CString  = string_to_cstring(file_path);
         status = unsafe { extern_functions::GenerateOfflineDeactivationRequest(c_file_path.as_ptr()) };
     }
-    println!("Generate Offline Deactivation Request inside: {}", status);
-    match status {
-        0 => Ok(()), // Include the desired status code
-        _ => Err(LexActivatorErrorCode::from(status)),
+    if status == 0 {
+        Ok(())
+    } else {
+        return Err(LexActivatorErrorCode::from(status));
     }
 }
+
+/// It verifies whether your app is genuinely activated or not. The verification is done locally by verifying the cryptographic digital signature fetched at the time of activation.
+///
+/// After verifying locally, it schedules a server check in a separate thread. After the first server sync it periodically does further syncs at a frequency set for the license.
+/// 
+/// In case server sync fails due to network error, and it continues to fail for fixed number of days (grace period), the function returns LA_GRACE_PERIOD_OVER instead of LA_OK.
+/// 
+/// This function must be called on every start of your program to verify the activation of your app.
+/// 
+/// # Returns
+///
+/// Returns `Ok(LexActivatorStatusCode)` with the status code `LexActivatorStatusCode::LA_OK` if the license is genuine. Otherwise, returns an `Err` containing the `LexActivatorErrorCode`.
 
 pub fn is_license_genuine() -> Result<LexActivatorStatusCode, LexActivatorErrorCode> {
     let status = unsafe { extern_functions::IsLicenseGenuine() };
-    println!("IsLicenseGenuine inside: {}", status);
-    match status {
-        0 => Ok(LexActivatorStatusCode::from(status)), // Include the desired status code
-        _ => Err(LexActivatorErrorCode::from(status)),
+    if status == 0 {
+        Ok(LexActivatorStatusCode::from(status))
+    } else {
+        return Err(LexActivatorErrorCode::from(status));
     }
 }
+
+/// It verifies whether your app is genuinely activated or not. The verification is done locally by verifying the cryptographic digital signature fetched at the time of activation.
+/// 
+/// This is just an auxiliary function which you may use in some specific cases, when you want to skip the server sync.
+/// 
+/// You may want to set grace period to 0 to ignore grace period.
+/// 
+/// # Returns
+///
+/// Returns `Ok(LexActivatorStatusCode)` with the status code `LexActivatorStatusCode::LA_OK` if the license is genuine. Otherwise, returns an `Err` containing the `LexActivatorErrorCode`.
 
 pub fn is_license_valid() -> Result<LexActivatorStatusCode, LexActivatorErrorCode> {
     let status = unsafe { extern_functions::IsLicenseValid() };
-    println!("IsLicenseValid inside: {}", status);
-    match status {
-        0 => Ok(LexActivatorStatusCode::from(status)), // Include the desired status code
-        _ => Err(LexActivatorErrorCode::from(status)),
+    if status == 0 {
+        Ok(LexActivatorStatusCode::from(status))
+    } else {
+        return Err(LexActivatorErrorCode::from(status));
     }
 }
 
+/// Starts the verified trial in your application by contacting the Cryptlex servers.
+/// 
+/// This function should be executed when your application starts first time on the user's computer, ideally on a button click.
+///
+/// # Returns
+/// 
+/// Returns `Ok(LexActivatorStatusCode)` with the status code `LexActivatorStatusCode::LA_OK` if the trial has started successfully. Otherwise, returns an `Err` containing the `LexActivatorErrorCode`.
+///
+
 pub fn activate_trial() -> Result<LexActivatorStatusCode, LexActivatorErrorCode> {
     let status = unsafe { extern_functions::ActivateTrial() };
-    println!("ActivateTrial inside: {}", status);
-    match status {
-        0 => Ok(LexActivatorStatusCode::from(status)), // Include the desired status code
-        _ => Err(LexActivatorErrorCode::from(status)),
+    if status == 0 {
+        Ok(LexActivatorStatusCode::from(status))
+    } else {
+        return Err(LexActivatorErrorCode::from(status));
     }
 }
+
+/// Activates the trial using the offline activation response file.
+/// 
+/// # Arguments
+/// 
+/// * `file_path` - path of the offline activation response file.
+/// 
+/// # Returns
+/// 
+/// Returns `Ok(LexActivatorStatusCode)` with the status code `LexActivatorStatusCode::LA_OK` if the trial has started successfully. Otherwise, returns an `Err` containing the `LexActivatorErrorCode`.
+/// 
 
 pub fn activate_trial_offline(file_path: &str) -> Result<(), LexActivatorErrorCode> {
     let status: i32;
@@ -1289,12 +1672,23 @@ pub fn activate_trial_offline(file_path: &str) -> Result<(), LexActivatorErrorCo
         let c_file_path: CString  = string_to_cstring(file_path);
         status = unsafe { extern_functions::ActivateTrialOffline(c_file_path.as_ptr()) };
     }
-    println!("ActivateTrialOffline inside: {}", status);
-    match status {
-        0 => Ok(()), // Include the desired status code
-        _ => Err(LexActivatorErrorCode::from(status)),
+    if status == 0 {
+        Ok(())
+    } else {
+        return Err(LexActivatorErrorCode::from(status));
     }
 }
+
+/// Generates the offline trial activation request needed for generating offline trial activation response in the dashboard.
+///
+/// # Arguments
+///
+/// * `file_path` - path of the file path where the offline request has to be saved.
+/// 
+/// # Returns
+/// 
+/// Returns `Ok(LexActivatorStatusCode)` with the status code `LexActivatorStatusCode::LA_OK` if the trial has started successfully. Otherwise, returns an `Err` containing the `LexActivatorErrorCode`.
+/// 
 
 pub fn generate_offline_trial_activation_request(file_path: &str) -> Result<(), LexActivatorErrorCode> {
     let status: i32;
@@ -1308,50 +1702,112 @@ pub fn generate_offline_trial_activation_request(file_path: &str) -> Result<(), 
         let c_file_path: CString  = string_to_cstring(file_path);
         status = unsafe { extern_functions::GenerateOfflineTrialActivationRequest(c_file_path.as_ptr()) };
     }
-    println!("GenerateOfflineTrialActivationRequest inside: {}", status);
-    match status {
-        0 => Ok(()), // Include the desired status code
-        _ => Err(LexActivatorErrorCode::from(status)),
+    if status == 0 {
+        Ok(())
+    } else {
+        return Err(LexActivatorErrorCode::from(status));
     }
 }
 
+/// It verifies whether trial has started and is genuine or not. The verification is done locally by verifying the cryptographic digital signature fetched at the time of trial activation.
+/// 
+/// This function must be called on every start of your program during the trial period.
+/// 
+/// # Returns
+/// 
+/// Returns `Ok(LexActivatorStatusCode)` with the status code `LexActivatorStatusCode::LA_OK` if trial has started and is genuine. Otherwise, returns an `Err` containing the `LexActivatorErrorCode`.
+///
+
 pub fn is_trial_genuine() -> Result<LexActivatorStatusCode, LexActivatorErrorCode> {
     let status = unsafe { extern_functions::IsTrialGenuine() };
-    println!("IsTrialGenuine inside: {}", status);
-    match status {
-        0 => Ok(LexActivatorStatusCode::from(status)), // Include the desired status code
-        _ => Err(LexActivatorErrorCode::from(status)),
+    if status == 0 {
+        Ok(LexActivatorStatusCode::from(status))
+    } else {
+        return Err(LexActivatorErrorCode::from(status));
     }
 }
+
+/// Starts the local(unverified) trial.
+/// 
+/// This function should be executed when your application starts first time on the user's computer.
+/// 
+/// The function is only meant for local(unverified) trials.
+/// 
+/// # Arguments
+/// 
+/// * `trial_length` - trial length in days
+/// 
+/// # Returns
+/// 
+/// Returns `Ok(LexActivatorStatusCode)` with the status code `LexActivatorStatusCode::LA_OK` if the trial has started successfully. Otherwise, returns an `Err` containing the `LexActivatorErrorCode`.
+/// 
 
 pub fn activate_local_trial(trial_length: u32) -> Result<LexActivatorStatusCode, LexActivatorErrorCode> {
     let c_trial_length: c_uint = trial_length as c_uint;
     let status = unsafe { extern_functions::ActivateLocalTrial(c_trial_length) };
-    println!("ActivateLocalTrial inside: {}", status);
-    match status {
-        0 => Ok(LexActivatorStatusCode::from(status)), // Include the desired status code
-        _ => Err(LexActivatorErrorCode::from(status)),
+    if status == 0 {
+        Ok(LexActivatorStatusCode::from(status))
+    } else {
+        return Err(LexActivatorErrorCode::from(status));
     }
 }
 
+/// It verifies whether trial has started and is genuine or not. The verification is done locally.
+/// 
+/// This function must be called on every start of your program during the trial period.
+/// 
+/// The function is only meant for local(unverified) trials.
+/// 
+/// # Returns
+/// 
+/// Returns `Ok(LexActivatorStatusCode)` with the status code `LexActivatorStatusCode::LA_OK` if trial has started and is genuine. Otherwise, returns an `Err` containing the `LexActivatorErrorCode`.
+///
+
 pub fn is_local_trial_genuine() -> Result<LexActivatorStatusCode, LexActivatorErrorCode> {
     let status = unsafe { extern_functions::IsLocalTrialGenuine() };
-    println!("IsLocalTrialGenuine inside: {}", status);
-    match status {
-        0 => Ok(LexActivatorStatusCode::from(status)), // Include the desired status code
-        _ => Err(LexActivatorErrorCode::from(status)),
+    if status == 0 {
+        Ok(LexActivatorStatusCode::from(status))
+    } else {
+        return Err(LexActivatorErrorCode::from(status));
     }
 }
+
+/// Extends the local trial.
+/// 
+/// This function should be executed when you want to extend the trial period.
+/// 
+/// The function is only meant for local(unverified) trials.
+/// 
+/// # Arguments
+/// 
+/// * `trial_extension_length` - number of days to extend the trial
+/// 
+/// # Returns
+/// 
+/// Returns `Ok(LexActivatorStatusCode)` with the status code `LexActivatorStatusCode::LA_OK` if the trial has started successfully. Otherwise, returns an `Err` containing the `LexActivatorErrorCode`.
+/// 
 
 pub fn extend_local_trial(trial_extension_length: u32) -> Result<LexActivatorStatusCode, LexActivatorErrorCode> {
     let c_trial_extension_length: c_uint = trial_extension_length as c_uint;
     let status = unsafe { extern_functions::ExtendLocalTrial(c_trial_extension_length) };
-    println!("ExtendLocalTrial inside: {}", status);
-    match status {
-        0 => Ok(LexActivatorStatusCode::from(status)), // Include the desired status code
-        _ => Err(LexActivatorErrorCode::from(status)),
+    if status == 0 {
+        Ok(LexActivatorStatusCode::from(status))
+    } else {
+        return Err(LexActivatorErrorCode::from(status));
     }
 }
+
+/// Increments the meter attribute uses of the activation.
+/// 
+/// # Arguments
+/// 
+/// * `name` - name of the meter attribute
+/// * `increment` - number of units to increment the usage by
+/// 
+/// # Returns
+/// 
+/// Returns `Ok(LexActivatorStatusCode)` with the status code `LexActivatorStatusCode::LA_OK` if the meter attribute uses was incremented successfully. Otherwise, returns an `Err` containing the `LexActivatorErrorCode`.
+/// 
 
 pub fn increment_activation_meter_attribute_uses(name: &str, increment: u32) -> Result<(), LexActivatorErrorCode> {
     let status: i32;
@@ -1366,12 +1822,24 @@ pub fn increment_activation_meter_attribute_uses(name: &str, increment: u32) -> 
         let c_name: CString  = string_to_cstring(name);
         status = unsafe { extern_functions::IncrementActivationMeterAttributeUses(c_name.as_ptr(), c_increment) };
     }
-    println!("IncrementActivationMeterAttributeUses inside: {}", status);
-    match status {
-        0 => Ok(()), // Include the desired status code
-        _ => Err(LexActivatorErrorCode::from(status)),
+    if status == 0 {
+        Ok(())
+    } else {
+        return Err(LexActivatorErrorCode::from(status));
     }
 }
+
+/// Decrements the meter attribute uses of the activation.
+/// 
+/// # Arguments
+/// 
+/// * `name` - name of the meter attribute
+/// * `decrement` - number of units to decrement the usage by
+/// 
+/// # Returns
+/// 
+/// Returns `Ok(LexActivatorStatusCode)` with the status code `LexActivatorStatusCode::LA_OK` if the meter attribute uses was decremented successfully. Otherwise, returns an `Err` containing the `LexActivatorErrorCode`.
+/// 
 
 pub fn decrement_activation_meter_attribute_uses(name: &str, decrement: u32) -> Result<(), LexActivatorErrorCode> {
     let status: i32;
@@ -1386,12 +1854,23 @@ pub fn decrement_activation_meter_attribute_uses(name: &str, decrement: u32) -> 
         let c_name: CString  = string_to_cstring(name);
         status = unsafe { extern_functions::DecrementActivationMeterAttributeUses(c_name.as_ptr(), c_decrement) };
     }
-    println!("DecrementActivationMeterAttributeUses inside: {}", status);
-    match status {
-        0 => Ok(()), // Include the desired status code
-        _ => Err(LexActivatorErrorCode::from(status)),
+    if status == 0 {
+        Ok(())
+    } else {
+        return Err(LexActivatorErrorCode::from(status));
     }
 }
+
+/// Resets the meter attribute uses of the activation.
+/// 
+/// # Arguments
+/// 
+/// * `name` - name of the meter attribute
+/// 
+/// # Returns
+/// 
+/// Returns `Ok(LexActivatorStatusCode)` with the status code `LexActivatorStatusCode::LA_OK` if the meter attribute uses was reset successfully. Otherwise, returns an `Err` containing the `LexActivatorErrorCode`.
+/// 
 
 pub fn reset_activation_meter_attribute_uses(name: &str) -> Result<(), LexActivatorErrorCode> {
     let status: i32;
@@ -1405,19 +1884,29 @@ pub fn reset_activation_meter_attribute_uses(name: &str) -> Result<(), LexActiva
         let c_name: CString  = string_to_cstring(name);
         status = unsafe { extern_functions::ResetActivationMeterAttributeUses(c_name.as_ptr()) };
     }
-    println!("ResetActivationMeterAttributeUses inside: {}", status);
-    match status {
-        0 => Ok(()), // Include the desired status code
-        _ => Err(LexActivatorErrorCode::from(status)),
+    if status == 0 {
+        Ok(())
+    } else {
+        return Err(LexActivatorErrorCode::from(status));
     }
 }
 
+/// Resets the activation and trial data stored in the machine.
+/// 
+/// This function is meant for developer testing only.
+/// 
+/// The function does not reset local(unverified) trial data.
+/// 
+/// # Returns
+/// 
+/// Returns `Ok(())` if the activation and trial data was reset successfully. Otherwise, returns an `Err` containing the `LexActivatorErrorCode`.
+///
+
 pub fn reset() -> Result<(), LexActivatorErrorCode> {
     let status = unsafe { extern_functions::Reset() };
-    println!("Reset inside: {}", status);
-    if status != 0 {
-        return Err(LexActivatorErrorCode::from(status));
-    } else {
+    if status == 0 {
         Ok(())
+    } else {
+        return Err(LexActivatorErrorCode::from(status));
     }
 }

@@ -1,5 +1,11 @@
 
 use std::ffi::*;
+
+use crate::{extern_functions::*, error_code::LexActivatorErrorCode};
+
+
+
+
 // --------------------------- String operations ------------------------
 
 // fn string_to_wstring(key: &str) -> *const u16 {
@@ -21,9 +27,20 @@ pub fn string_to_cstring(key: &str) -> CString {
         Ok(cstring) => cstring,
         Err(err) => {
             panic!("Failed to convert Rust string to C string: {}", err);
+            // return Err(LexActivatorErrorCode::from(err));
         }
     };
     c_license_key
+}
+pub fn string_to_cstringx(key: &str) -> Result<CString, LexActivatorErrorCode> {
+    let license_key_result: Result<CString, NulError> = CString::new(key);
+    let c_license_key: CString = match license_key_result {
+        Ok(cstring) => cstring,
+        Err(err) => {
+            return Err(LexActivatorErrorCode::from(err));
+        }
+    };
+    Ok(c_license_key)
 }
 
 // fn to_utf16_A(key: &str) -> *const u16 {

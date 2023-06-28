@@ -1,6 +1,7 @@
 #![allow(non_camel_case_types)] // allowing All Caps names for constants
 
 use std::fmt;
+use std::ffi::NulError;
 #[derive(Debug)]
 #[derive(PartialEq)] // to make comparison operation possible for these codes
 #[repr(i32)]
@@ -221,5 +222,12 @@ impl fmt::Display for LexActivatorErrorCode {
             LexActivatorErrorCode::LA_E_SERVER => write!(f, "{} Server error.", LexActivatorErrorCode::LA_E_SERVER as i32),
             LexActivatorErrorCode::LA_E_CLIENT => write!(f, "{} Client error.", LexActivatorErrorCode::LA_E_CLIENT as i32),
         }
+    }
+}
+
+impl From<NulError> for LexActivatorErrorCode {
+    fn from(_: NulError) -> Self {
+        // LexActivatorErrorCode::LA_E_PRODUCT_DATA
+        LexActivatorErrorCode::LA_E_LICENSE_KEY
     }
 }
