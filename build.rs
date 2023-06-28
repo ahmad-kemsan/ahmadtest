@@ -6,8 +6,8 @@ fn main() {
     // Set the rpath flag to embed the library's location
     // let out_dir = env::var("OUT_DIR").unwrap();
     // println!("cargo:rustc-link-search={}/native={}", out_dir, library_path);
-    println!("cargo:rustc-link-search=.");
-    println!("cargo:rustc-link-lib=LexActivator");
+    println!("cargo:rustc-link-search=native=.");
+    println!("cargo:rustc-link-lib=static=LexActivator");
 }
 
 // use std::env;
