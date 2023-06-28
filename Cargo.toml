@@ -2,7 +2,7 @@
 
 [package]
 name = "ahmadtest"
-version = "0.1.11"
+version = "0.1.12"
 edition = "2021"
 description = "just to test rust crates"
 license = "MIT"
