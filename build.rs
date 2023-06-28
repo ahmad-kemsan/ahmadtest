@@ -1,5 +1,13 @@
+use std::env;
+
 fn main() {
-    println!("cargo:rustc-link-search=.");
+    // Specify the desired library path
+    let library_path = ".";
+
+    // Set the rpath flag to embed the library's location
+    let out_dir = env::var("OUT_DIR").unwrap();
+    println!("cargo:rustc-link-search={}/native={}", out_dir, library_path);
+    
     println!("cargo:rustc-link-lib=dylib=LexActivator");
 }
 
