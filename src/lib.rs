@@ -1,3 +1,5 @@
+#![allow(non_camel_case_types)]
+
 // importing all ?
 use std::ffi::*;
 use serde::{Deserialize};
@@ -48,6 +50,7 @@ pub struct OrganizationAddress {
     pub postal_code: String
 }
 #[repr(u32)]
+
 pub enum PermissionFlags {
     LA_USER = 1,
     LA_SYSTEM = 2,
@@ -120,7 +123,7 @@ pub fn set_product_data(product_data: &str) -> Result<(), LexActivatorErrorCode>
 /// Returns `Ok(())` if the data directory is set successfully, If an error occurs, an `Err` containing the `LexActivatorErrorCode`is returned.
 ///
  
-pub fn set_product_id(product_id: &str, permission_flags: PermissionFlags) -> Result<(), LexActivatorErrorCode> {
+pub fn set_product_id(product_id: String, permission_flags: PermissionFlags) -> Result<(), LexActivatorErrorCode> {
     let status: i32;
     let c_flags: c_uint = permission_flags as u32 as c_uint;
     #[cfg(windows)]
@@ -635,7 +638,7 @@ pub fn get_product_metadata(key: &str) -> Result<String, LexActivatorErrorCode> 
     
     let status: i32;
     const LENGTH: usize = 256;
-    let mut product_metadata_value: String;
+    let product_metadata_value: String;
     #[cfg(windows)]
     {
         let mut buffer: [u16; LENGTH] = [0; LENGTH];
@@ -697,7 +700,7 @@ pub fn get_product_version_name() -> Result<String, LexActivatorErrorCode> {
 pub fn get_product_version_display_name() -> Result<String, LexActivatorErrorCode> {
     let status: i32;
     const LENGTH: usize = 256; // Set the appropriate buffer length
-    let mut product_version_display_name: String;
+    let product_version_display_name: String;
     #[cfg(windows)]
     {
         let mut buffer: [u16; LENGTH] = [0; LENGTH];
@@ -732,7 +735,7 @@ pub fn get_product_version_display_name() -> Result<String, LexActivatorErrorCod
 pub fn get_product_version_feature_flag(name: &str) -> Result<ProductVersionFeatureFlag, LexActivatorErrorCode> {
     let status: i32;
     const LENGTH: usize = 256; // Set the appropriate buffer length
-    let mut data: String;
+    let data: String;
     let mut c_enabled: c_uint = 0;
     #[cfg(windows)]
     {
@@ -776,7 +779,7 @@ pub fn get_product_version_feature_flag(name: &str) -> Result<ProductVersionFeat
 pub fn get_license_metadata(key: &str) -> Result<String, LexActivatorErrorCode> {
     let status: i32;
     const LENGTH: usize = 256; // Set the appropriate buffer length
-    let mut license_metadata: String;
+    let license_metadata: String;
     #[cfg(windows)]
     {
         let mut buffer: [u16; LENGTH] = [0; LENGTH];
@@ -848,7 +851,7 @@ pub fn get_license_meterattribute(name: &str) -> Result<LicenseMeterAttribute, L
 pub fn get_license_key() -> Result<String, LexActivatorErrorCode> {
     let status: i32;
     const LENGTH: usize = 256; // Set the appropriate buffer length
-    let mut license_key: String;
+    let license_key: String;
     #[cfg(windows)]
     {
         let mut buffer: [u16; LENGTH] = [0; LENGTH];
@@ -951,7 +954,7 @@ pub fn get_license_maintenance_expiry_date() -> Result<u32, LexActivatorErrorCod
 pub fn get_license_max_allowed_release_version() -> Result<String, LexActivatorErrorCode> {
     let status: i32;
     const LENGTH: usize = 256; // Set the appropriate buffer length
-    let mut max_allowed_release_version: String;
+    let max_allowed_release_version: String;
     #[cfg(windows)]
     {
         let mut buffer: [u16; LENGTH] = [0; LENGTH];
@@ -982,7 +985,7 @@ pub fn get_license_max_allowed_release_version() -> Result<String, LexActivatorE
 pub fn get_license_user_email() -> Result<String, LexActivatorErrorCode> {
     let status: i32;
     const LENGTH: usize = 256; // Set the appropriate buffer length
-    let mut user_email: String;
+    let user_email: String;
     #[cfg(windows)]
     {
         let mut buffer: [u16; LENGTH] = [0; LENGTH];
@@ -1013,7 +1016,7 @@ pub fn get_license_user_email() -> Result<String, LexActivatorErrorCode> {
 pub fn get_license_user_name() -> Result<String, LexActivatorErrorCode> {
     let status: i32;
     const LENGTH: usize = 256; // Set the appropriate buffer length
-    let mut user_name: String;
+    let user_name: String;
     #[cfg(windows)]
     {
         let mut buffer: [u16; LENGTH] = [0; LENGTH];
@@ -1044,7 +1047,7 @@ pub fn get_license_user_name() -> Result<String, LexActivatorErrorCode> {
 pub fn get_license_user_company() -> Result<String, LexActivatorErrorCode> {
     let status: i32;
     const LENGTH: usize = 256; // Set the appropriate buffer length
-    let mut user_company: String;
+    let user_company: String;
     #[cfg(windows)]
     {
         let mut buffer: [u16; LENGTH] = [0; LENGTH];
@@ -1079,7 +1082,7 @@ pub fn get_license_user_company() -> Result<String, LexActivatorErrorCode> {
 pub fn get_license_user_metadata(key: &str) -> Result<String, LexActivatorErrorCode> {
     let status: i32;
     const LENGTH: usize = 256; // Set the appropriate buffer length
-    let mut user_metadata: String;
+    let user_metadata: String;
     #[cfg(windows)]
     {
         let mut buffer: [u16; LENGTH] = [0; LENGTH];
@@ -1112,7 +1115,7 @@ pub fn get_license_user_metadata(key: &str) -> Result<String, LexActivatorErrorC
 pub fn get_license_organization_name() -> Result<String, LexActivatorErrorCode> {
     let status: i32;
     const LENGTH: usize = 256; // Set the appropriate buffer length
-    let mut organization_name: String;
+    let organization_name: String;
     #[cfg(windows)]
     {
         let mut buffer: [u16; LENGTH] = [0; LENGTH];
@@ -1143,7 +1146,7 @@ pub fn get_license_organization_name() -> Result<String, LexActivatorErrorCode> 
 pub fn get_license_organization_address() -> Result<OrganizationAddress, LexActivatorErrorCode> {
     let status: i32;
     const LENGTH: usize = 256; // Set the appropriate buffer length
-    let mut org_address_json: String;
+    let org_address_json: String;
     #[cfg(windows)]
     {
         let mut buffer: [u16; LENGTH] = [0; LENGTH];
@@ -1176,7 +1179,7 @@ pub fn get_license_organization_address() -> Result<OrganizationAddress, LexActi
 pub fn get_license_type() -> Result<String, LexActivatorErrorCode> {
     let status: i32;
     const LENGTH: usize = 256; // Set the appropriate buffer length
-    let mut license_type: String;
+    let license_type: String;
     #[cfg(windows)]
     {
         let mut buffer: [u16; LENGTH] = [0; LENGTH];
@@ -1211,7 +1214,7 @@ pub fn get_license_type() -> Result<String, LexActivatorErrorCode> {
 pub fn get_activation_metadata(key: &str) -> Result<String, LexActivatorErrorCode> {
     let status: i32;
     const LENGTH: usize = 256; // Set the appropriate buffer length
-    let mut activation_metadata: String;
+    let activation_metadata: String;
     #[cfg(windows)]
     {
         let mut buffer: [u16; LENGTH] = [0; LENGTH];
@@ -1244,8 +1247,8 @@ pub fn get_activation_metadata(key: &str) -> Result<String, LexActivatorErrorCod
 pub fn get_activation_mode() -> Result<ActivationMode, LexActivatorErrorCode> {
     let status: i32;
     const LENGTH: usize = 256; // Set the appropriate buffer length
-    let mut initial_activation_mode: String;
-    let mut current_activation_mode: String;
+    let initial_activation_mode: String;
+    let current_activation_mode: String;
     #[cfg(windows)]
     {
         let mut initial_mode_buffer: [u16; LENGTH] = [0; LENGTH];
@@ -1340,7 +1343,7 @@ pub fn get_server_sync_grace_period_expiry_date() -> Result<u32, LexActivatorErr
 pub fn get_trial_activation_metadata(key: &str) -> Result<String, LexActivatorErrorCode> {
     let status: i32;
     const LENGTH: usize = 256; // Set the appropriate buffer length
-    let mut trial_activation_metadata: String;
+    let trial_activation_metadata: String;
     #[cfg(windows)]
     {
         let mut buffer: [u16; LENGTH] = [0; LENGTH];
@@ -1391,7 +1394,7 @@ pub fn get_trial_expiry_date() -> Result<u32, LexActivatorErrorCode> {
 pub fn get_trial_id() -> Result<String, LexActivatorErrorCode> {
     let status: i32;
     const LENGTH: usize = 256; // Set the appropriate buffer length
-    let mut trial_id: String;
+    let trial_id: String;
     #[cfg(windows)]
     {
         let mut buffer: [u16; LENGTH] = [0; LENGTH];
@@ -1442,7 +1445,7 @@ pub fn get_local_trial_expiry_date() -> Result<u32, LexActivatorErrorCode> {
 pub fn get_library_version() -> Result<String, LexActivatorErrorCode> {
     let status: i32;
     const LENGTH: usize = 256; // Set the appropriate buffer length
-    let mut library_version: String;
+    let library_version: String;
     #[cfg(windows)]
     {
         let mut buffer: [u16; LENGTH] = [0; LENGTH];
