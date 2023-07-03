@@ -2,6 +2,7 @@
 
 use std::fmt;
 use std::ffi::NulError;
+
 #[derive(Debug)]
 #[derive(PartialEq)] // to make comparison operation possible for these codes
 #[repr(i32)]

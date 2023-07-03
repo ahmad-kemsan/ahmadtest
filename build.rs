@@ -7,13 +7,12 @@ fn main() {
     // let out_dir = env::var("OUT_DIR").unwrap();
     // println!("cargo:rustc-link-search={}/native={}", out_dir, library_path);
     println!("cargo:rustc-link-search=native=.");
-    println!("cargo:rustc-link-lib=static=LexActivator");
-    #[cfg(target_os = "macos")]
-    {
-        println!("cargo:rustc-link-lib=framework=CoreFoundation");
-        println!("cargo:rustc-link-lib=framework=SystemConfiguration");
-        println!("cargo:rustc-link-lib=framework=Security");
-    }
+    println!("cargo:rustc-link-lib=dylib=LexActivator");
+
+    // println!("cargo:rustc-link-lib=framework=CoreFoundation");
+    // println!("cargo:rustc-link-lib=framework=SystemConfiguration");
+    // println!("cargo:rustc-link-lib=framework=Security");
+    
 }
 
 // use std::env;

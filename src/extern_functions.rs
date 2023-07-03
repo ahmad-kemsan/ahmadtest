@@ -1,3 +1,4 @@
+
 use std::ffi::*;
 
 #[cfg(windows)]
@@ -30,6 +31,7 @@ macro_rules! strtype {
 
 type CallbackType = extern "C" fn(u32);
 
+#[link(name = "LexActivator")]
 extern "C" {
     // --------------- Setter Functions ---------------
     pub fn SetProductFile(filePath: cstrtype!()) -> c_int;

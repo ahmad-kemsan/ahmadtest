@@ -1,10 +1,7 @@
 
 use std::ffi::*;
 
-use crate::{extern_functions::*, error_code::LexActivatorErrorCode};
-
-
-
+use crate::{error_code::LexActivatorErrorCode};
 
 // --------------------------- String operations ------------------------
 

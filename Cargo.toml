@@ -2,10 +2,11 @@
 
 [package]
 name = "ahmadtest"
-version = "0.1.14"
+version = "0.1.15"
 edition = "2021"
 description = "just to test rust crates"
 license = "MIT"
+links = "LexActivator"
 build = "build.rs"
 
 # [lib]
