@@ -18,7 +18,7 @@ pub fn string_to_cstring_a(key: &str) -> CString {
     key_cstring
 }
 
-pub fn string_to_cstring(key: &str) -> CString {
+pub fn string_to_cstringx(key: &str) -> CString {
     let license_key_result: Result<CString, NulError> = CString::new(key);
     let c_license_key: CString = match license_key_result {
         Ok(cstring) => cstring,
@@ -29,17 +29,29 @@ pub fn string_to_cstring(key: &str) -> CString {
     };
     c_license_key
 }
-pub fn string_to_cstringx(key: String) -> Result<CString, LexActivatorErrorCode> {
+
+pub fn string_to_cstringa(key: &str) -> Result<CString, LexActivatorErrorCode> {
     let license_key_result: Result<CString, NulError> = CString::new(key);
     let c_license_key: CString = match license_key_result {
         Ok(cstring) => cstring,
-        Err(err) => {
-            return Err(LexActivatorErrorCode::from(err));
+        Err(error) => {
+            return Err(LexActivatorErrorCode::from(error));
         }
     };
     Ok(c_license_key)
 }
 
+
+pub fn string_to_cstring(mut key: String) -> Result<CString, NulError> {
+    if key.contains('\0') {
+        // Replace null characters with an empty string
+        key = key.replace('\0', "");
+        println!("key after operation: {}", key);
+        println!("Length after operation: {}", key.len());
+    }
+    let c_license_key = CString::new(key)?;
+    Ok(c_license_key)
+}
 // pub fn string_to_cstringa(key: &str) -> CString {
 //     let license_key_result: Result<CString, NulError> = CString::new(key);
 //     let c_license_key: CString = match license_key_result {
@@ -58,7 +70,7 @@ pub fn string_to_cstringx(key: String) -> Result<CString, LexActivatorErrorCode>
 //     utf16_ptr
 // }
 
-pub fn to_utf16(product_id: &str) -> Vec<u16> {
+pub fn to_utf16a(product_id: &str) -> Vec<u16> {
     let utf16: Vec<u16> = product_id
         .encode_utf16()
         .chain(std::iter::once(0))
@@ -66,8 +78,8 @@ pub fn to_utf16(product_id: &str) -> Vec<u16> {
     utf16
 }
 
-pub fn to_utf16a(product_id: String) -> Vec<u16> {
-    let utf16: Vec<u16> = product_id
+pub fn to_utf16(rust_string: String) -> Vec<u16> {
+    let utf16: Vec<u16> = rust_string
         .encode_utf16()
         .chain(std::iter::once(0))
         .collect::<Vec<_>>();

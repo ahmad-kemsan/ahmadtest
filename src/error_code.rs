@@ -231,7 +231,9 @@ impl fmt::Display for LexActivatorErrorCode {
 
 impl From<NulError> for LexActivatorErrorCode {
     fn from(_: NulError) -> Self {
-        // LexActivatorErrorCode::LA_E_PRODUCT_DATA
+        // LexActivatorErrorCode::LA_E_FILE_PATH;
+        // LexActivatorErrorCode::LA_E_PRODUCT_DATA;
         LexActivatorErrorCode::LA_E_LICENSE_KEY
+        
     }
 }

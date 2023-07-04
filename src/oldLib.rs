@@ -98,17 +98,31 @@ extern "C" {
 /// Returns `Ok(())` if the product path is set successfully, If an error occurs, an `Err` containing the `LexActivatorErrorCode`is returned.
 ///
 
-pub fn set_product_file(file_path: String) -> Result<(), LexActivatorErrorCode> {
+pub fn set_product_file(file_path: &str) -> Result<(), LexActivatorErrorCode> {
     let status: i32;
     #[cfg(windows)]
     {
         let c_file_path = to_utf16(file_path);
-        status = unsafe { SetProductFile(c_file_path.as_ptr()) };
+        match c_file_path {
+            Ok(c_file_path) => {
+                status = unsafe { SetProductFile(c_file_path.as_ptr()) };
+            },
+            Err(_) => {
+                return Err(LexActivatorErrorCode::LA_E_FILE_PATH);
+            }
+        }
     }
     #[cfg(not(windows))]
     {
-        let c_file_path = string_to_cstring(file_path)?;
-        status = unsafe { SetProductFile(c_file_path.as_ptr()) };
+        let c_file_path = string_to_cstring(file_path);
+        match c_file_path {
+            Ok(c_file_path) => {
+                status = unsafe { SetProductFile(c_file_path.as_ptr()) };
+            },
+            Err(_) => {
+                return Err(LexActivatorErrorCode::LA_E_FILE_PATH);
+            }
+        }
     }
     if status == 0 {
         Ok(())
@@ -134,18 +148,32 @@ pub fn set_product_file(file_path: String) -> Result<(), LexActivatorErrorCode> 
 /// Returns `Ok(())` if the product data is set successfully, If an error occurs, an `Err` containing the `LexActivatorErrorCode`is returned.
 ///
 
-pub fn set_product_data(product_data: String) -> Result<(), LexActivatorErrorCode> {
+pub fn set_product_data(product_data: &str) -> Result<(), LexActivatorErrorCode> {
     
     let status: i32;
     #[cfg(windows)]
     {
         let c_product_data = to_utf16(product_data);
-        status = unsafe { SetProductData(c_product_data.as_ptr()) };     
+        match c_product_data {
+            Ok(c_product_data) => {
+                status = unsafe { SetProductData(c_product_data.as_ptr()) };
+            },
+            Err(_) => {
+                return Err(LexActivatorErrorCode::LA_E_PRODUCT_DATA);
+            }
+        }
     }
     #[cfg(not(windows))]
     {
-        let c_product_data = string_to_cstring(product_data)?;    
-        status = unsafe { SetProductData(c_product_data.as_ptr()) };
+        let c_product_data = string_to_cstring(product_data);
+        match c_product_data {
+            Ok(c_product_data) => {
+                status = unsafe { SetProductData(c_product_data.as_ptr()) };
+            },
+            Err(_) => {
+                return Err(LexActivatorErrorCode::LA_E_PRODUCT_DATA);
+            }
+        }
     }
     if status == 0 {
         Ok(())
@@ -171,18 +199,32 @@ pub fn set_product_data(product_data: String) -> Result<(), LexActivatorErrorCod
 /// Returns `Ok(())` if the data directory is set successfully, If an error occurs, an `Err` containing the `LexActivatorErrorCode`is returned.
 ///
  
-pub fn set_product_id(product_id: String, permission_flags: PermissionFlags) -> Result<(), LexActivatorErrorCode> {
+pub fn set_product_id(product_id: &str, permission_flags: PermissionFlags) -> Result<(), LexActivatorErrorCode> {
     let status: i32;
     let c_flags: c_uint = permission_flags as u32 as c_uint;
     #[cfg(windows)]
     {
         let c_product_id = to_utf16(product_id);
-        status = unsafe { SetProductId(c_product_id.as_ptr(), c_flags) };
+        match c_product_id {
+            Ok(c_product_id) => {
+                status = unsafe { SetProductId(c_product_id.as_ptr(), c_flags) };
+            }
+            Err(_) => {
+                return Err(LexActivatorErrorCode::LA_E_PRODUCT_ID);
+            }
+        }
     }
     #[cfg(not(windows))]
     {
-        let c_product_id = string_to_cstring(product_id)?;
-        status = unsafe { SetProductId(c_product_id.as_ptr(), c_flags) };
+        let c_product_id = string_to_cstring(product_id);
+        match c_product_id {
+            Ok(c_product_id) => {
+                status = unsafe { SetProductId(c_product_id.as_ptr(), c_flags) };
+            }
+            Err(_) => {
+                return Err(LexActivatorErrorCode::LA_E_PRODUCT_ID);
+            }
+        }
     }
     if status == 0 {
         Ok(())
@@ -205,19 +247,34 @@ pub fn set_product_id(product_id: String, permission_flags: PermissionFlags) -> 
 /// Returns `Ok(())` if the data directory is set successfully. If an error occurs, an `Err` containing the `LexActivatorErrorCode`is returned.
 /// 
 
-pub fn set_data_directory(data_dir: String) -> Result<(), LexActivatorErrorCode> {
+pub fn set_data_directory(data_dir: &str) -> Result<(), LexActivatorErrorCode> {
 
     let status: i32;
     #[cfg(windows)]
     {
         let c_data_dir = to_utf16(data_dir);
-        status = unsafe { SetDataDirectory(c_data_dir.as_ptr()) };
+        match c_data_dir {
+            Ok(c_data_dir) => {
+                status = unsafe { SetDataDirectory(c_data_dir.as_ptr()) };
+            }
+            Err(_) => {
+                return Err(LexActivatorErrorCode::LA_E_FILE_PATH); // error code needs to be decided
+            }
+        }    
     }
     #[cfg(not(windows))]
     {
-        let c_data_dir = string_to_cstring(data_dir)?;
-        status = unsafe { SetDataDirectory(c_data_dir.as_ptr()) };
+        let c_data_dir = string_to_cstring(data_dir);
+        match c_data_dir {
+            Ok(c_data_dir) => {
+                status = unsafe { SetDataDirectory(c_data_dir.as_ptr()) };
+            }
+            Err(_) => {
+                return Err(LexActivatorErrorCode::LA_E_FILE_PATH); // error code needs to be decided
+            }
+        }
     }
+    // print!("SetDataDirectory status: {}", status);
     if status == 0 {
         Ok(())
     } else {
@@ -240,19 +297,33 @@ pub fn set_data_directory(data_dir: String) -> Result<(), LexActivatorErrorCode>
 /// This function will panic if the input string contains the null character.
 ///
 
-pub fn set_custom_device_fingerprint(device_fingerprint: String) -> Result<(), LexActivatorErrorCode> {
+pub fn set_custom_device_fingerprint(device_fingerprint: &str) -> Result<(), LexActivatorErrorCode> {
 
     let status: i32;
     #[cfg(windows)]
     {
         // let c_product_id = get_utf16_ptr(product_id);
         let c_device_fingerprint = to_utf16(device_fingerprint);
-        status = unsafe { SetCustomDeviceFingerprint(c_device_fingerprint.as_ptr()) };
+        match c_device_fingerprint {
+            Ok(c_device_fingerprint) => {
+                status = unsafe { SetCustomDeviceFingerprint(c_device_fingerprint.as_ptr()) };
+            }
+            Err(_) => {
+                return Err(LexActivatorErrorCode::LA_E_MACHINE_FINGERPRINT); // error code needs to be decided
+            }
+        }
     }
     #[cfg(not(windows))]
     {
-        let c_device_fingerprint = string_to_cstring(device_fingerprint)?;
-        status = unsafe { SetCustomDeviceFingerprint(c_device_fingerprint.as_ptr()) };
+        let c_device_fingerprint = string_to_cstring(device_fingerprint);
+        match c_device_fingerprint {
+            Ok(c_device_fingerprint) => {
+                status = unsafe { SetCustomDeviceFingerprint(c_device_fingerprint.as_ptr()) };
+            }
+            Err(_) => {
+                return Err(LexActivatorErrorCode::LA_E_MACHINE_FINGERPRINT); // error code needs to be decided
+            }
+        }    
     }
     print!("SetDataDirectory status: {}", status);
     if status == 0 {
@@ -273,18 +344,32 @@ pub fn set_custom_device_fingerprint(device_fingerprint: String) -> Result<(), L
 /// Returns `Ok(())` if the license key is set successfully, If an error occurs, an `Err` containing the `LexActivatorErrorCode`is returned.
 ///
 
-pub fn set_license_key(license_key: String) -> Result<(), LexActivatorErrorCode> {
+pub fn set_license_key(license_key: &str) -> Result<(), LexActivatorErrorCode> {
 
     let status: i32;
     #[cfg(windows)]
     {
         let c_license_key = to_utf16(license_key);
-        status = unsafe { SetLicenseKey(c_license_key.as_ptr()) };
+        match c_license_key {
+            Ok(c_license_key) => {
+                status = unsafe { SetLicenseKey(c_license_key.as_ptr()) };
+            }
+            Err(_) => {
+                return Err(LexActivatorErrorCode::LA_E_PRODUCT_ID); // error code needs to be decided
+            }
+        }
     }
     #[cfg(not(windows))]
     {
-        let c_license_key = string_to_cstring(license_key)?;
-        status = unsafe { SetLicenseKey(c_license_key.as_ptr()) };
+        let c_license_key = string_to_cstring(license_key);
+        match c_license_key {
+            Ok(c_license_key) => {
+                status = unsafe { SetLicenseKey(c_license_key.as_ptr()) };
+            }
+            Err(_) => {
+                return Err(LexActivatorErrorCode::LA_E_PRODUCT_ID); // error code needs to be decided
+            }
+        }
     }
     print!("SetLicenseKey status: {}", status);
     if status == 0 {
@@ -305,7 +390,7 @@ pub fn set_license_key(license_key: String) -> Result<(), LexActivatorErrorCode>
 ///
 /// Returns `Ok(())` if the license user credentials are set successfully, If an error occurs, an `Err` containing the `LexActivatorErrorCode`is returned.
 
-pub fn set_license_user_credential(email: String, password: String) -> Result<(), LexActivatorErrorCode> {
+pub fn set_license_user_credential(email: &str, password: &str) -> Result<(), LexActivatorErrorCode> {
     
     let status: i32;
     #[cfg(windows)]
@@ -316,8 +401,8 @@ pub fn set_license_user_credential(email: String, password: String) -> Result<()
     }
     #[cfg(not(windows))]
     {
-        let c_email = string_to_cstring(email)?;
-        let c_password = string_to_cstring(password)?;
+        let c_email = string_to_cstringx(email);
+        let c_password = string_to_cstringx(password);
         status = unsafe { SetLicenseUserCredential(c_email.as_ptr(), c_password.as_ptr()) };
     }
     print!("SetLicenseUserCredential status: {}", status);
@@ -385,19 +470,47 @@ pub fn set_activation_lease_duration(lease_duration: u32) -> Result<(), LexActiv
 ///
 /// Returns `Ok(())` if the activation metadata is set successfully, If an error occurs, an `Err` containing the `LexActivatorErrorCode`is returned.
 
-pub fn set_activation_metadata(key: String, value: String) -> Result<(), LexActivatorErrorCode>  {
+pub fn set_activation_metadata(key: &str, value: &str) -> Result<(), LexActivatorErrorCode>  {
     let status: i32;
     #[cfg(windows)]
     {
         let c_key = to_utf16(key);
-        let c_value = to_utf16(value);
-        status = unsafe { SetActivationMetadata(c_key.as_ptr(), c_value.as_ptr()) };
+        match c_key {
+            Ok(c_key) => {
+                let c_value = to_utf16(value);
+                match c_value {
+                    Ok(c_value) => {
+                        status = unsafe { SetActivationMetadata(c_key.as_ptr(), c_value.as_ptr()) };
+                    }
+                    Err(_) => {
+                        return Err(LexActivatorErrorCode::LA_E_PRODUCT_ID); // error code needs to be decided
+                    }
+                }
+            }
+            Err(_) => {
+                return Err(LexActivatorErrorCode::LA_E_PRODUCT_ID); // error code needs to be decided
+            }
+        }
     }
     #[cfg(not(windows))]
     {
-        let c_key = string_to_cstring(key)?;
-        let c_value = string_to_cstring(value)?;
-        status = unsafe { SetActivationMetadata(c_key.as_ptr(), c_value.as_ptr()) };
+        let c_key = string_to_cstring(key);
+        match c_key {
+            Ok(c_key) => {
+                let c_value = string_to_cstring(value);
+                match c_value {
+                    Ok(c_value) => {
+                        status = unsafe { SetActivationMetadata(c_key.as_ptr(), c_value.as_ptr()) };
+                    }
+                    Err(_) => {
+                        return Err(LexActivatorErrorCode::LA_E_PRODUCT_ID); // error code needs to be decided
+                    }
+                }
+            }
+            Err(_) => {
+                return Err(LexActivatorErrorCode::LA_E_PRODUCT_ID); // error code needs to be decided
+            }
+        }
     }
     print!("SetActivationMetadata status: {}", status);
     if status == 0 {
@@ -455,12 +568,26 @@ pub fn set_release_version(release_version: String) -> Result<(), LexActivatorEr
     #[cfg(windows)]
     {
         let c_release_version = to_utf16(release_version);
-        status = unsafe { SetReleaseVersion(c_release_version.as_ptr()) };
+        match c_release_version {
+            Ok(c_release_version) => {
+                status = unsafe { SetReleaseVersion(c_release_version.as_ptr()) };
+            }
+            Err(_) => {
+                return Err(LexActivatorErrorCode::LA_E_PRODUCT_ID); // error code needs to be decided
+            }
+        }
     }
     #[cfg(not(windows))]
     {
-        let c_release_version = string_to_cstring(release_version)?;
-        status = unsafe { SetReleaseVersion(c_release_version.as_ptr()) };
+        let c_release_version = string_to_cstringa(release_version)?;
+        // match c_release_version {
+        //     Ok(c_release_version) => {
+                status = unsafe { SetReleaseVersion(c_release_version.as_ptr()) };
+        //     }
+        //     Err(_) => {
+        //         return Err(LexActivatorErrorCode::LA_E_PRODUCT_ID); // error code needs to be decided
+        //     }
+        // }
     }
     print!("SetReleaseVersion status: {}", status);
     if status == 0 {
@@ -500,17 +627,31 @@ pub fn set_release_published_date(release_published_date: u32) -> Result<(), Lex
 ///
 /// Returns `Ok(())` if the release platform is set successfully, If an error occurs, an `Err` containing the `LexActivatorErrorCode`is returned.
 
-pub fn set_release_platform(release_platform: String) -> Result<(), LexActivatorErrorCode> {
+pub fn set_release_platform(release_platform: &str) -> Result<(), LexActivatorErrorCode> {
     let status: i32;
     #[cfg(windows)]
     {
         let c_release_platform = to_utf16(release_platform);
-        status = unsafe { SetReleasePlatform(c_release_platform.as_ptr()) };
+        match c_release_platform {
+            Ok(c_release_platform) => {
+                status = unsafe { SetReleasePlatform(c_release_platform.as_ptr()) };
+            }
+            Err(_) => {
+                return Err(LexActivatorErrorCode::LA_E_PRODUCT_ID); // error code needs to be decided
+            }
+        }
     }
     #[cfg(not(windows))]
     {
-        let c_release_platform = string_to_cstring(release_platform)?;
-        status = unsafe { SetReleasePlatform(c_release_platform.as_ptr()) };
+        let c_release_platform = string_to_cstring(release_platform);
+        match c_release_platform {
+            Ok(c_release_platform) => {
+                status = unsafe { SetReleasePlatform(c_release_platform.as_ptr()) };
+            }
+            Err(_) => {
+                return Err(LexActivatorErrorCode::LA_E_PRODUCT_ID); // error code needs to be decided
+            }
+        }
     }
     print!("SetReleasePlatform status: {}", status);
     if status == 0 {
@@ -530,17 +671,31 @@ pub fn set_release_platform(release_platform: String) -> Result<(), LexActivator
 ///
 /// Returns `Ok(())` if the release channel is set successfully, If an error occurs, an `Err` containing the `LexActivatorErrorCode`is returned.
 
-pub fn set_release_channel(release_channel: String) -> Result<(), LexActivatorErrorCode> {
+pub fn set_release_channel(release_channel: &str) -> Result<(), LexActivatorErrorCode> {
     let status: i32;
     #[cfg(windows)]
     {
         let c_release_channel = to_utf16(release_channel);
-        status = unsafe { SetReleaseChannel(c_release_channel.as_ptr()) };
+        match c_release_channel {
+            Ok(c_release_channel) => {
+                status = unsafe { SetReleaseChannel(c_release_channel.as_ptr()) };
+            }
+            Err(_) => {
+                return Err(LexActivatorErrorCode::LA_E_PRODUCT_ID); // error code needs to be decided
+            }
+        }
     }
     #[cfg(not(windows))]
     {
-        let c_release_channel = string_to_cstring(release_channel)?;
-        status = unsafe { SetReleaseChannel(c_release_channel.as_ptr()) };
+        let c_release_channel = string_to_cstring(release_channel);
+        match c_release_channel {
+            Ok(c_release_channel) => {
+                status = unsafe { SetReleaseChannel(c_release_channel.as_ptr()) };
+            }
+            Err(_) => {
+                return Err(LexActivatorErrorCode::LA_E_PRODUCT_ID); // error code needs to be decided
+            }
+        }
     }
     print!("SetReleaseChannel status: {}", status);
     if status == 0 {
@@ -561,7 +716,7 @@ pub fn set_release_channel(release_channel: String) -> Result<(), LexActivatorEr
 ///
 /// Returns `Ok(())` if the offline activation request meter attribute uses are set successfully, If an error occurs, an `Err` containing the `LexActivatorErrorCode`is returned.
 
-pub fn set_offline_activation_request_meter_attribute_uses(name: String, uses: i32) -> Result<(), LexActivatorErrorCode>{
+pub fn set_offline_activation_request_meter_attribute_uses(name: &str, uses: i32) -> Result<(), LexActivatorErrorCode>{
     let status: i32;
     let c_uses: c_uint = uses as c_uint;
     #[cfg(windows)]
@@ -571,7 +726,7 @@ pub fn set_offline_activation_request_meter_attribute_uses(name: String, uses: i
     }
     #[cfg(not(windows))]
     {
-        let c_name = string_to_cstring(name)?;
+        let c_name = string_to_cstringx(name);
         status = unsafe { SetOfflineActivationRequestMeterAttributeUses(c_name.as_ptr(), c_uses) };
     }
     print!("SetOfflineActivationRequestMeterAttributeUses status: {}", status);
@@ -592,7 +747,7 @@ pub fn set_offline_activation_request_meter_attribute_uses(name: String, uses: i
 ///
 /// Returns `Ok(())` if the network proxy is set successfully, If an error occurs, an `Err` containing the `LexActivatorErrorCode`is returned.
 
-pub fn set_network_proxy(proxy: String) -> Result<(), LexActivatorErrorCode> {
+pub fn set_network_proxy(proxy: &str) -> Result<(), LexActivatorErrorCode> {
     let status: i32;
     #[cfg(windows)]
     {
@@ -601,7 +756,7 @@ pub fn set_network_proxy(proxy: String) -> Result<(), LexActivatorErrorCode> {
     }
     #[cfg(not(windows))]
     {
-        let c_proxy = string_to_cstring(proxy)?;
+        let c_proxy = string_to_cstringx(proxy);
         status = unsafe { SetNetworkProxy(c_proxy.as_ptr()) };
     }
     print!("SetNetworkProxy status: {}", status);
@@ -622,7 +777,7 @@ pub fn set_network_proxy(proxy: String) -> Result<(), LexActivatorErrorCode> {
 ///
 /// Returns `Ok(())` if the Cryptlex host is set successfully, If an error occurs, an `Err` containing the `LexActivatorErrorCode`is returned.
 
-pub fn set_cryptlex_host(host: String) -> Result<(), LexActivatorErrorCode> {
+pub fn set_cryptlex_host(host: &str) -> Result<(), LexActivatorErrorCode> {
     let status: i32;
     #[cfg(windows)]
     {
@@ -631,7 +786,7 @@ pub fn set_cryptlex_host(host: String) -> Result<(), LexActivatorErrorCode> {
     }
     #[cfg(not(windows))]
     {
-        let c_host = string_to_cstring(host)?;
+        let c_host = string_to_cstringx(host);
         status = unsafe { SetCryptlexHost(c_host.as_ptr()) };
     }
     print!("SetCryptlexHost status: {}", status);
@@ -664,7 +819,7 @@ pub fn set_cryptlex_host(host: String) -> Result<(), LexActivatorErrorCode> {
 /// - The product key is invalid or not found.
 /// - There is an issue with the license validation process.
 
-pub fn get_product_metadata(key: String) -> Result<String, LexActivatorErrorCode> {
+pub fn get_product_metadata(key: &str) -> Result<String, LexActivatorErrorCode> {
     
     let status: i32;
     const LENGTH: usize = 256;
@@ -679,7 +834,7 @@ pub fn get_product_metadata(key: String) -> Result<String, LexActivatorErrorCode
     #[cfg(not(windows))]
     {
         let mut buffer: [c_char; LENGTH] = [0; LENGTH];
-        let key_cstring: CString  = string_to_cstring(key)?;
+        let key_cstring: CString  = string_to_cstringx(key);
         status = unsafe { GetProductMetadata(key_cstring.as_ptr(), buffer.as_mut_ptr(), LENGTH as c_uint) };
         product_metadata_value = c_char_to_string(&buffer);
     }
@@ -762,11 +917,10 @@ pub fn get_product_version_display_name() -> Result<String, LexActivatorErrorCod
 ///
 /// Returns `Ok(ProductVersionFeatureFlag)` with the feature flag information if it is retrieved successfully, If an error occurs, an `Err` containing the `LexActivatorErrorCode`is returned.
 
-pub fn get_product_version_feature_flag(name: String) -> Result<ProductVersionFeatureFlag, LexActivatorErrorCode> {
+pub fn get_product_version_feature_flag(name: &str) -> Result<ProductVersionFeatureFlag, LexActivatorErrorCode> {
     let status: i32;
     const LENGTH: usize = 256; // Set the appropriate buffer length
     let data: String;
-    let feature_name: String = name.clone();
     let mut c_enabled: c_uint = 0;
     #[cfg(windows)]
     {
@@ -777,13 +931,13 @@ pub fn get_product_version_feature_flag(name: String) -> Result<ProductVersionFe
     }
     #[cfg(not(windows))]
     {
-        let c_name = string_to_cstring(name)?;
+        let c_name = string_to_cstringx(name);
         let mut buffer: [c_char; LENGTH] = [0; LENGTH];
         status = unsafe { GetProductVersionFeatureFlag(c_name.as_ptr(), &mut c_enabled, buffer.as_mut_ptr(), LENGTH as c_uint) };
         data = c_char_to_string(&buffer);
     }
     let product_version_feature_flag = ProductVersionFeatureFlag {
-        name: feature_name,
+        name: name.to_string(),
         enabled: u32_to_bool(c_enabled),
         data: data
     };
@@ -807,7 +961,7 @@ pub fn get_product_version_feature_flag(name: String) -> Result<ProductVersionFe
 ///
 /// Returns `Ok(String)` with the metadata value if it is retrieved successfully, If an error occurs, an `Err` containing the `LexActivatorErrorCode`is returned.
 
-pub fn get_license_metadata(key: String) -> Result<String, LexActivatorErrorCode> {
+pub fn get_license_metadata(key: &str) -> Result<String, LexActivatorErrorCode> {
     let status: i32;
     const LENGTH: usize = 256; // Set the appropriate buffer length
     let license_metadata: String;
@@ -821,7 +975,7 @@ pub fn get_license_metadata(key: String) -> Result<String, LexActivatorErrorCode
     #[cfg(not(windows))]
     {
         let mut buffer: [c_char; LENGTH] = [0; LENGTH];
-        let c_key: CString  = string_to_cstring(key)?;
+        let c_key: CString  = string_to_cstringx(key);
         status = unsafe { GetLicenseMetadata(c_key.as_ptr(), buffer.as_mut_ptr(), LENGTH as c_uint) };
         license_metadata = c_char_to_string(&buffer);
     }
@@ -844,12 +998,11 @@ pub fn get_license_metadata(key: String) -> Result<String, LexActivatorErrorCode
 ///
 /// Returns `Ok(LicenseMeterAttribute)` with the meter attribute information if it is retrieved successfully, If an error occurs, an `Err` containing the `LexActivatorErrorCode`is returned.
 
-pub fn get_license_meterattribute(name: String) -> Result<LicenseMeterAttribute, LexActivatorErrorCode> {
+pub fn get_license_meterattribute(name: &str) -> Result<LicenseMeterAttribute, LexActivatorErrorCode> {
     let status: i32;
     let mut c_allowed_uses: c_uint = 0;
     let mut c_total_uses: c_uint = 0;
     let mut c_gross_uses: c_uint = 0;
-    let meter_attribute_name: String = name.clone();
     #[cfg(windows)]
     {
         let c_name =  to_utf16(name);
@@ -857,11 +1010,11 @@ pub fn get_license_meterattribute(name: String) -> Result<LicenseMeterAttribute,
     }
     #[cfg(not(windows))]
     {
-        let c_name = string_to_cstring(name)?;
+        let c_name = string_to_cstringx(name);
         status = unsafe { GetLicenseMeterAttribute(c_name.as_ptr(), &mut c_allowed_uses, &mut c_total_uses, &mut c_gross_uses) };
     }
     let meter_attribute = LicenseMeterAttribute {
-        name: meter_attribute_name,
+        name: name.to_string(),
         allowed_uses: c_allowed_uses,
         total_uses: c_total_uses,
         gross_uses: c_gross_uses,
@@ -1111,7 +1264,7 @@ pub fn get_license_user_company() -> Result<String, LexActivatorErrorCode> {
 ///
 /// Returns `Ok(String)` with the metadata value if it is retrieved successfully, If an error occurs, an `Err` containing the `LexActivatorErrorCode`is returned.
 
-pub fn get_license_user_metadata(key: String) -> Result<String, LexActivatorErrorCode> {
+pub fn get_license_user_metadata(key: &str) -> Result<String, LexActivatorErrorCode> {
     let status: i32;
     const LENGTH: usize = 256; // Set the appropriate buffer length
     let user_metadata: String;
@@ -1125,7 +1278,7 @@ pub fn get_license_user_metadata(key: String) -> Result<String, LexActivatorErro
     #[cfg(not(windows))]
     {
         let mut buffer: [c_char; LENGTH] = [0; LENGTH];
-        let c_key: CString  = string_to_cstring(key)?;
+        let c_key: CString  = string_to_cstringx(key);
         status = unsafe { GetLicenseUserMetadata(c_key.as_ptr(), buffer.as_mut_ptr(), LENGTH as c_uint) };
         user_metadata = c_char_to_string(&buffer);
     }
@@ -1243,7 +1396,7 @@ pub fn get_license_type() -> Result<String, LexActivatorErrorCode> {
 ///
 /// Returns `Ok(String)` with the metadata value if it is retrieved successfully, If an error occurs, an `Err` containing the `LexActivatorErrorCode`is returned.
 
-pub fn get_activation_metadata(key: String) -> Result<String, LexActivatorErrorCode> {
+pub fn get_activation_metadata(key: &str) -> Result<String, LexActivatorErrorCode> {
     let status: i32;
     const LENGTH: usize = 256; // Set the appropriate buffer length
     let activation_metadata: String;
@@ -1257,7 +1410,7 @@ pub fn get_activation_metadata(key: String) -> Result<String, LexActivatorErrorC
     #[cfg(not(windows))]
     {
         let mut buffer: [c_char; LENGTH] = [0; LENGTH];
-        let c_key: CString  = string_to_cstring(key)?;
+        let c_key: CString  = string_to_cstringx(key);
         status = unsafe { GetActivationMetadata(c_key.as_ptr(), buffer.as_mut_ptr(), LENGTH as c_uint) };
         activation_metadata = c_char_to_string(&buffer);
     }
@@ -1320,7 +1473,7 @@ pub fn get_activation_mode() -> Result<ActivationMode, LexActivatorErrorCode> {
 ///
 /// Returns `Ok(u32)` with the number of uses of the metered attribute if it is retrieved successfully, If an error occurs, an `Err` containing the `LexActivatorErrorCode`is returned.
 
-pub fn get_activation_meter_attribute_uses(name: String) -> Result<u32, LexActivatorErrorCode> {
+pub fn get_activation_meter_attribute_uses(name: &str) -> Result<u32, LexActivatorErrorCode> {
     let status: i32;
     let mut count: c_uint = 0;
     #[cfg(windows)]
@@ -1331,7 +1484,7 @@ pub fn get_activation_meter_attribute_uses(name: String) -> Result<u32, LexActiv
     #[cfg(not(windows))]
     {
         // let mut buffer: [c_char; LENGTH] = [0; LENGTH];
-        let c_name: CString  = string_to_cstring(name)?;
+        let c_name: CString  = string_to_cstringx(name);
         status = unsafe { GetActivationMeterAttributeUses(c_name.as_ptr(), &mut count) };
     }
     println!("Activation Metadata: {}", count);
@@ -1372,7 +1525,7 @@ pub fn get_server_sync_grace_period_expiry_date() -> Result<u32, LexActivatorErr
 ///
 /// Returns `Ok(String)` with the metadata value if it is retrieved successfully, If an error occurs, an `Err` containing the `LexActivatorErrorCode`is returned.
 
-pub fn get_trial_activation_metadata(key: String) -> Result<String, LexActivatorErrorCode> {
+pub fn get_trial_activation_metadata(key: &str) -> Result<String, LexActivatorErrorCode> {
     let status: i32;
     const LENGTH: usize = 256; // Set the appropriate buffer length
     let trial_activation_metadata: String;
@@ -1386,7 +1539,7 @@ pub fn get_trial_activation_metadata(key: String) -> Result<String, LexActivator
     #[cfg(not(windows))]
     {
         let mut buffer: [c_char; LENGTH] = [0; LENGTH];
-        let c_key: CString  = string_to_cstring(key)?;
+        let c_key: CString  = string_to_cstringx(key);
         status = unsafe { GetTrialActivationMetadata(c_key.as_ptr(), buffer.as_mut_ptr(), LENGTH as c_uint) };
         trial_activation_metadata = c_char_to_string(&buffer);
     }
@@ -1531,7 +1684,7 @@ pub fn activate_license() -> Result<LexActivatorStatusCode, LexActivatorErrorCod
 /// Returns `Ok(())` if the license activation is successful. If an error occurs, an `Err` containing the `LexActivatorErrorCode`is returned.
 ///
 
-pub fn activate_license_offline(file_path: String) -> Result<(), LexActivatorErrorCode> {
+pub fn activate_license_offline(file_path: &str) -> Result<(), LexActivatorErrorCode> {
     let status: i32;
     #[cfg(windows)]
     {
@@ -1540,7 +1693,7 @@ pub fn activate_license_offline(file_path: String) -> Result<(), LexActivatorErr
     }
     #[cfg(not(windows))]
     {
-        let c_file_path: CString  = string_to_cstring(file_path)?;
+        let c_file_path: CString  = string_to_cstringx(file_path);
         status = unsafe { extern_functions::ActivateLicenseOffline(c_file_path.as_ptr()) };
     }
     if status == 0 {
@@ -1560,7 +1713,7 @@ pub fn activate_license_offline(file_path: String) -> Result<(), LexActivatorErr
 ///
 /// Returns `Ok(())` if the offline activation request file generation is successful. If an error occurs, an `Err` containing the `LexActivatorErrorCode`is returned.
 
-pub fn generate_offline_activation_request(file_path: String) -> Result<(), LexActivatorErrorCode> {
+pub fn generate_offline_activation_request(file_path: &str) -> Result<(), LexActivatorErrorCode> {
     let status: i32;
     #[cfg(windows)]
     {
@@ -1569,7 +1722,7 @@ pub fn generate_offline_activation_request(file_path: String) -> Result<(), LexA
     }
     #[cfg(not(windows))]
     {
-        let c_file_path: CString  = string_to_cstring(file_path)?;
+        let c_file_path: CString  = string_to_cstringx(file_path);
         status = unsafe { extern_functions::GenerateOfflineActivationRequest(c_file_path.as_ptr()) };
     }
     if status == 0 {
@@ -1606,7 +1759,7 @@ pub fn deactivate_license() -> Result<LexActivatorStatusCode, LexActivatorErrorC
 ///
 /// Returns `Ok(())` if the offline deactivation request file generation is successful. If an error occurs, an `Err` containing the `LexActivatorErrorCode`is returned.
 
-pub fn generate_offline_deactivation_request(file_path: String) -> Result<(), LexActivatorErrorCode> {
+pub fn generate_offline_deactivation_request(file_path: &str) -> Result<(), LexActivatorErrorCode> {
     let status: i32;
     #[cfg(windows)]
     {
@@ -1615,7 +1768,7 @@ pub fn generate_offline_deactivation_request(file_path: String) -> Result<(), Le
     }
     #[cfg(not(windows))]
     {
-        let c_file_path: CString  = string_to_cstring(file_path)?;
+        let c_file_path: CString  = string_to_cstringx(file_path);
         status = unsafe { extern_functions::GenerateOfflineDeactivationRequest(c_file_path.as_ptr()) };
     }
     if status == 0 {
@@ -1694,7 +1847,7 @@ pub fn activate_trial() -> Result<LexActivatorStatusCode, LexActivatorErrorCode>
 /// Returns `Ok(LexActivatorStatusCode)` with the status code `LexActivatorStatusCode::LA_OK` if the trial has started successfully. If an error occurs, an `Err` containing the `LexActivatorErrorCode`is returned.
 /// 
 
-pub fn activate_trial_offline(file_path: String) -> Result<(), LexActivatorErrorCode> {
+pub fn activate_trial_offline(file_path: &str) -> Result<(), LexActivatorErrorCode> {
     let status: i32;
     #[cfg(windows)]
     {
@@ -1703,7 +1856,7 @@ pub fn activate_trial_offline(file_path: String) -> Result<(), LexActivatorError
     }
     #[cfg(not(windows))]
     {
-        let c_file_path: CString  = string_to_cstring(file_path)?;
+        let c_file_path: CString  = string_to_cstringx(file_path);
         status = unsafe { extern_functions::ActivateTrialOffline(c_file_path.as_ptr()) };
     }
     if status == 0 {
@@ -1724,7 +1877,7 @@ pub fn activate_trial_offline(file_path: String) -> Result<(), LexActivatorError
 /// Returns `Ok(LexActivatorStatusCode)` with the status code `LexActivatorStatusCode::LA_OK` if the trial has started successfully. If an error occurs, an `Err` containing the `LexActivatorErrorCode`is returned.
 /// 
 
-pub fn generate_offline_trial_activation_request(file_path: String) -> Result<(), LexActivatorErrorCode> {
+pub fn generate_offline_trial_activation_request(file_path: &str) -> Result<(), LexActivatorErrorCode> {
     let status: i32;
     #[cfg(windows)]
     {
@@ -1733,7 +1886,7 @@ pub fn generate_offline_trial_activation_request(file_path: String) -> Result<()
     }
     #[cfg(not(windows))]
     {
-        let c_file_path: CString  = string_to_cstring(file_path)?;
+        let c_file_path: CString  = string_to_cstringx(file_path);
         status = unsafe { extern_functions::GenerateOfflineTrialActivationRequest(c_file_path.as_ptr()) };
     }
     if status == 0 {
@@ -1843,7 +1996,7 @@ pub fn extend_local_trial(trial_extension_length: u32) -> Result<LexActivatorSta
 /// Returns `Ok(LexActivatorStatusCode)` with the status code `LexActivatorStatusCode::LA_OK` if the meter attribute uses was incremented successfully. If an error occurs, an `Err` containing the `LexActivatorErrorCode`is returned.
 /// 
 
-pub fn increment_activation_meter_attribute_uses(name: String, increment: u32) -> Result<(), LexActivatorErrorCode> {
+pub fn increment_activation_meter_attribute_uses(name: &str, increment: u32) -> Result<(), LexActivatorErrorCode> {
     let status: i32;
     let c_increment: c_uint = increment as c_uint;
     #[cfg(windows)]
@@ -1853,7 +2006,7 @@ pub fn increment_activation_meter_attribute_uses(name: String, increment: u32) -
     }
     #[cfg(not(windows))]
     {
-        let c_name: CString  = string_to_cstring(name)?;
+        let c_name: CString  = string_to_cstringx(name);
         status = unsafe { extern_functions::IncrementActivationMeterAttributeUses(c_name.as_ptr(), c_increment) };
     }
     if status == 0 {
@@ -1875,7 +2028,7 @@ pub fn increment_activation_meter_attribute_uses(name: String, increment: u32) -
 /// Returns `Ok(LexActivatorStatusCode)` with the status code `LexActivatorStatusCode::LA_OK` if the meter attribute uses was decremented successfully. If an error occurs, an `Err` containing the `LexActivatorErrorCode`is returned.
 /// 
 
-pub fn decrement_activation_meter_attribute_uses(name: String, decrement: u32) -> Result<(), LexActivatorErrorCode> {
+pub fn decrement_activation_meter_attribute_uses(name: &str, decrement: u32) -> Result<(), LexActivatorErrorCode> {
     let status: i32;
     let c_decrement: c_uint = decrement as c_uint;
     #[cfg(windows)]
@@ -1885,7 +2038,7 @@ pub fn decrement_activation_meter_attribute_uses(name: String, decrement: u32) -
     }
     #[cfg(not(windows))]
     {
-        let c_name: CString  = string_to_cstring(name)?;
+        let c_name: CString  = string_to_cstringx(name);
         status = unsafe { extern_functions::DecrementActivationMeterAttributeUses(c_name.as_ptr(), c_decrement) };
     }
     if status == 0 {
@@ -1906,7 +2059,7 @@ pub fn decrement_activation_meter_attribute_uses(name: String, decrement: u32) -
 /// Returns `Ok(LexActivatorStatusCode)` with the status code `LexActivatorStatusCode::LA_OK` if the meter attribute uses was reset successfully. If an error occurs, an `Err` containing the `LexActivatorErrorCode`is returned.
 /// 
 
-pub fn reset_activation_meter_attribute_uses(name: String) -> Result<(), LexActivatorErrorCode> {
+pub fn reset_activation_meter_attribute_uses(name: &str) -> Result<(), LexActivatorErrorCode> {
     let status: i32;
     #[cfg(windows)]
     {
@@ -1915,7 +2068,7 @@ pub fn reset_activation_meter_attribute_uses(name: String) -> Result<(), LexActi
     }
     #[cfg(not(windows))]
     {
-        let c_name: CString  = string_to_cstring(name)?;
+        let c_name: CString  = string_to_cstringx(name);
         status = unsafe { extern_functions::ResetActivationMeterAttributeUses(c_name.as_ptr()) };
     }
     if status == 0 {
