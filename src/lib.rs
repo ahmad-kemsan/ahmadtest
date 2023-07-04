@@ -418,7 +418,7 @@ pub fn set_activation_metadata(key: String, value: String) -> Result<(), LexActi
 ///
 /// Returns `Ok(())` if the trial activation metadata is set successfully, If an error occurs, an `Err` containing the `LexActivatorErrorCode`is returned.
 
-pub fn set_trial_activation_metadata(key: &str, value: &str) -> Result<(), LexActivatorErrorCode> {
+pub fn set_trial_activation_metadata(key: String, value: String) -> Result<(), LexActivatorErrorCode> {
     let status: i32;
     #[cfg(windows)]
     {
@@ -428,8 +428,8 @@ pub fn set_trial_activation_metadata(key: &str, value: &str) -> Result<(), LexAc
     }
     #[cfg(not(windows))]
     {
-        let c_key = string_to_cstringx(key);
-        let c_value = string_to_cstringx(value);
+        let c_key = string_to_cstring(key)?;
+        let c_value = string_to_cstring(value)?;
         status = unsafe { SetTrialActivationMetadata(c_key.as_ptr(), c_value.as_ptr()) };
     }
     print!("SetTrialActivationMetadata status: {}", status);
