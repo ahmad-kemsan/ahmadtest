@@ -14,7 +14,7 @@ jobs:
         steps:
           
           - name: Checkout code
-            uses: actions/checkout@v3
+            uses: actions/checkout@v2
 
           - name: Set up Rust
             run: rustup update stable && rustup default stable
@@ -32,6 +32,6 @@ jobs:
               git tag ${{ github.event.inputs.packageVersion }}
               git push & git push --tags
           
-          - name: Publish
-            run: |
-              cargo publish --token ${{ secrets.CRATES_IO_TOKEN }}
+        #   - name: Publish
+        #     run: |
+        #       cargo publish --token 
