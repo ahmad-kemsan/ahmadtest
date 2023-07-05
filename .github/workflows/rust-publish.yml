@@ -19,18 +19,18 @@ jobs:
       - name: Set up Rust
         run: rustup update stable && rustup default stable
 
-      - name: Update Package Version
-        run: |
-          sed -i '/version =/!b;c \ \ version = "${{ github.event.inputs.packageVersion }}",' Cargo.toml
+    #   - name: Update Package Version
+    #     run: |
+    #       sed -i '/version =/!b;c \ \ version = "${{ github.event.inputs.packageVersion }}",' Cargo.toml
 
-      - name: Commit, Tag and Push
-        run: |
-          git add Cargo.toml
-          git config --global user.name "ahmad-kemsan"
-          git config --global user.email "ahmadkemsan@gmail.com"
-          git commit -m "chore(package version): updated version" | exit 0
-          git tag ${{ github.event.inputs.packageVersion }}
-          git push & git push --tags
+    #   - name: Commit, Tag and Push
+    #     run: |
+    #       git add Cargo.toml
+    #       git config --global user.name "ahmad-kemsan"
+    #       git config --global user.email "ahmadkemsan@gmail.com"
+    #       git commit -m "chore(package version): updated version" | exit 0
+    #       git tag ${{ github.event.inputs.packageVersion }}
+    #       git push & git push --tags
           
       - name: Publish
         run: |
