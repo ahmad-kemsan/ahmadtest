@@ -44,7 +44,6 @@ pub fn string_to_cstringa(key: &str) -> Result<CString, LexActivatorErrorCode> {
 
 pub fn string_to_cstring(mut key: String) -> Result<CString, NulError> {
     if key.contains('\0') {
-        // Replace null characters with an empty string
         key = key.replace('\0', "");
         println!("key after operation: {}", key);
         println!("Length after operation: {}", key.len());

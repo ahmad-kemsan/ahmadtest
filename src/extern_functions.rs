@@ -29,7 +29,7 @@ macro_rules! strtype {
     }
 }
 
-type CallbackType = extern "C" fn(u32);
+pub type CallbackType = extern "C" fn(u32);
 
 #[link(name = "LexActivator")]
 extern "C" {

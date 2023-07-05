@@ -77,11 +77,11 @@ pub enum PermissionFlags {
     LA_IN_MEMORY = 4,
 }
 
-type CallbackType = extern "C" fn(u32);
+// type CallbackType = extern "C" fn(u32);
 
-extern "C" {
-    fn SetLicenseCallback(callback: CallbackType) -> i32;
-}
+// extern "C" {
+//     fn SetLicenseCallback(callback: CallbackType) -> i32;
+// }
 
 // --------------- Setter functions ------------------------
 
