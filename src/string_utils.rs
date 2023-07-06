@@ -30,19 +30,19 @@ pub fn string_to_cstringx(key: &str) -> CString {
     c_license_key
 }
 
-pub fn string_to_cstringa(key: &str) -> Result<CString, LexActivatorErrorCode> {
-    let license_key_result: Result<CString, NulError> = CString::new(key);
-    let c_license_key: CString = match license_key_result {
-        Ok(cstring) => cstring,
-        Err(error) => {
-            return Err(LexActivatorErrorCode::from(error));
-        }
-    };
-    Ok(c_license_key)
+pub fn string_to_cstring(key: &str) -> Result<CString, LexActivatorErrorCode> {
+    let license_key_result: CString = CString::new(key)?;
+    // let c_license_key: CString = match license_key_result {
+    //     Ok(cstring) => cstring,
+    //     Err(error) => {
+    //         return Err(LexActivatorErrorCode::from(error));
+    //     }
+    // };
+    Ok(license_key_result)
 }
 
 
-pub fn string_to_cstring(mut key: String) -> Result<CString, NulError> {
+pub fn string_to_cstringnew(mut key: String) -> Result<CString, NulError> {
     if key.contains('\0') {
         key = key.replace('\0', "");
         println!("key after operation: {}", key);
