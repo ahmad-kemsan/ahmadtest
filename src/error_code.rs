@@ -4,7 +4,7 @@ use std::fmt;
 use std::ffi::NulError;
 
 #[derive(Debug)]
-#[derive(PartialEq)] // to make comparison operation possible for these codes
+#[derive(PartialEq)] 
 #[repr(i32)]
 pub enum LexActivatorStatusCode {
     LA_OK = 0,
@@ -23,7 +23,6 @@ pub enum LexActivatorStatusCode {
 #[derive(PartialEq)]
 #[repr(i32)]
 pub enum LexActivatorErrorCode {
-    LA_FAIL = 1,
     LA_E_FILE_PATH = 40,
     LA_E_PRODUCT_FILE = 41,
     LA_E_PRODUCT_DATA = 42,
@@ -97,7 +96,6 @@ impl From<i32> for LexActivatorStatusCode {
 impl From<i32> for LexActivatorErrorCode {
     fn from(code: i32) -> Self {
         match code {
-            1 => LexActivatorErrorCode::LA_FAIL,
             40 => LexActivatorErrorCode::LA_E_FILE_PATH,
             41 => LexActivatorErrorCode::LA_E_PRODUCT_FILE,
             42 => LexActivatorErrorCode::LA_E_PRODUCT_DATA,
@@ -174,7 +172,6 @@ impl fmt::Display for LexActivatorStatusCode {
 impl fmt::Display for LexActivatorErrorCode {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            LexActivatorErrorCode::LA_FAIL => write!(f, "{} Failure code.", LexActivatorErrorCode::LA_FAIL as i32),
             LexActivatorErrorCode::LA_E_FILE_PATH => write!(f, "{} Invalid file path.", LexActivatorErrorCode::LA_E_FILE_PATH as i32),
             LexActivatorErrorCode::LA_E_PRODUCT_FILE => write!(f, "{} Invalid or corrupted product file.", LexActivatorErrorCode::LA_E_PRODUCT_FILE as i32),
             LexActivatorErrorCode::LA_E_PRODUCT_DATA => write!(f, "{} Invalid product data.", LexActivatorErrorCode::LA_E_PRODUCT_DATA as i32),
@@ -231,9 +228,7 @@ impl fmt::Display for LexActivatorErrorCode {
 
 impl From<NulError> for LexActivatorErrorCode {
     fn from(_: NulError) -> Self {
-        // LexActivatorErrorCode::LA_E_FILE_PATH;
-        // LexActivatorErrorCode::LA_E_PRODUCT_DATA;
-        LexActivatorErrorCode::LA_E_LICENSE_KEY
+        LexActivatorErrorCode::LA_E_CLIENT
         
     }
 }

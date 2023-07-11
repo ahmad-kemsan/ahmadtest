@@ -1,7 +1,6 @@
 #![allow(non_camel_case_types)]
 
-// importing all ?
-use std::ffi::*;
+use std::ffi::{c_uint, CString, c_char};
 use serde::{Deserialize};
 
 pub use extern_functions::*;
@@ -11,11 +10,6 @@ pub use string_utils::*;
 pub mod extern_functions;
 pub mod error_code;
 pub mod string_utils;
-
-
-// use crate::extern_functions;
-// use crate::error_code::*;
-
 
 /// Represents a license meter attribute.
 #[derive(Debug)] 
@@ -77,12 +71,6 @@ pub enum PermissionFlags {
     LA_IN_MEMORY = 4,
 }
 
-// type CallbackType = extern "C" fn(u32);
-
-// extern "C" {
-//     fn SetLicenseCallback(callback: CallbackType) -> i32;
-// }
-
 // --------------- Setter functions ------------------------
 
 /// Sets the absolute path of the Product.dat file.
@@ -96,7 +84,6 @@ pub enum PermissionFlags {
 /// # Returns
 /// 
 /// Returns `Ok(())` if the product path is set successfully, If an error occurs, an `Err` containing the `LexActivatorErrorCode`is returned.
-///
 
 pub fn set_product_file(file_path: String) -> Result<(), LexActivatorErrorCode> {
     let status: i32;
@@ -132,7 +119,6 @@ pub fn set_product_file(file_path: String) -> Result<(), LexActivatorErrorCode> 
 /// # Returns
 /// 
 /// Returns `Ok(())` if the product data is set successfully, If an error occurs, an `Err` containing the `LexActivatorErrorCode`is returned.
-///
 
 pub fn set_product_data(product_data: String) -> Result<(), LexActivatorErrorCode> {
     
@@ -169,7 +155,6 @@ pub fn set_product_data(product_data: String) -> Result<(), LexActivatorErrorCod
 /// # Returns
 ///
 /// Returns `Ok(())` if the data directory is set successfully, If an error occurs, an `Err` containing the `LexActivatorErrorCode`is returned.
-///
  
 pub fn set_product_id(product_id: String, permission_flags: PermissionFlags) -> Result<(), LexActivatorErrorCode> {
     let status: i32;
@@ -203,7 +188,6 @@ pub fn set_product_id(product_id: String, permission_flags: PermissionFlags) -> 
 /// # Returns
 /// 
 /// Returns `Ok(())` if the data directory is set successfully. If an error occurs, an `Err` containing the `LexActivatorErrorCode`is returned.
-/// 
 
 pub fn set_data_directory(data_dir: String) -> Result<(), LexActivatorErrorCode> {
 
@@ -234,11 +218,6 @@ pub fn set_data_directory(data_dir: String) -> Result<(), LexActivatorErrorCode>
 /// # Returns
 /// 
 /// Returns `Ok(())` if the custom device fingerprint is set successfully. If an error occurs, an `Err` containing the `LexActivatorErrorCode`is returned.
-/// 
-/// # Panics
-/// 
-/// This function will panic if the input string contains the null character.
-///
 
 pub fn set_custom_device_fingerprint(device_fingerprint: String) -> Result<(), LexActivatorErrorCode> {
 
@@ -271,7 +250,6 @@ pub fn set_custom_device_fingerprint(device_fingerprint: String) -> Result<(), L
 /// # Returns
 ///
 /// Returns `Ok(())` if the license key is set successfully, If an error occurs, an `Err` containing the `LexActivatorErrorCode`is returned.
-///
 
 pub fn set_license_key(license_key: String) -> Result<(), LexActivatorErrorCode> {
 
@@ -1500,10 +1478,27 @@ pub fn get_library_version() -> Result<String, LexActivatorErrorCode> {
  
 pub fn activate_license() -> Result<LexActivatorStatusCode, LexActivatorErrorCode> {
     let status = unsafe { extern_functions::ActivateLicense() };
-    if status == 0 {
-        Ok(LexActivatorStatusCode::from(status))
-    } else {
-        return Err(LexActivatorErrorCode::from(status));
+    // if status == 0 {
+    //     Ok(LexActivatorStatusCode::from(status))
+    // } 
+    // else if status == LexActivatorStatusCode::LA_EXPIRED as i32 {
+    //     Ok(LexActivatorStatusCode::from(status))
+    // }
+    // else if status == LexActivatorStatusCode::LA_SUSPENDED as i32 {
+    //     Ok(LexActivatorStatusCode::from(status))
+    // }
+    // else if status == LexActivatorStatusCode::LA_FAIL as i32 {
+    //     Ok(LexActivatorStatusCode::from(status))
+    // }
+    // else {
+    //     return Err(LexActivatorErrorCode::from(status));
+    // }
+    match status {
+        0 => Ok(LexActivatorStatusCode::LA_OK),
+        20 => Ok(LexActivatorStatusCode::LA_EXPIRED),
+        21 => Ok(LexActivatorStatusCode::LA_SUSPENDED),
+        1 => Ok(LexActivatorStatusCode::LA_FAIL),
+        _ => Err(LexActivatorErrorCode::from(status)),
     }
 }
 
@@ -1517,7 +1512,7 @@ pub fn activate_license() -> Result<LexActivatorStatusCode, LexActivatorErrorCod
 /// 
 /// Returns `Ok(LexActivatorStatusCode)` with the status code `LexActivatorStatusCode::LA_OK` if the license activation is successful. If an error occurs, an `Err` containing the `LexActivatorErrorCode`is returned.
 
-pub fn activate_license_offline(file_path: String) -> Result<(), LexActivatorErrorCode> {
+pub fn activate_license_offline(file_path: String) -> Result<LexActivatorStatusCode, LexActivatorErrorCode> {
     let status: i32;
     #[cfg(windows)]
     {
@@ -1529,10 +1524,12 @@ pub fn activate_license_offline(file_path: String) -> Result<(), LexActivatorErr
         let c_file_path: CString  = string_to_cstring(file_path)?;
         status = unsafe { extern_functions::ActivateLicenseOffline(c_file_path.as_ptr()) };
     }
-    if status == 0 {
-        Ok(())
-    } else {
-        return Err(LexActivatorErrorCode::from(status));
+    match status {
+        0 => Ok(LexActivatorStatusCode::LA_OK),
+        20 => Ok(LexActivatorStatusCode::LA_EXPIRED),
+        21 => Ok(LexActivatorStatusCode::LA_SUSPENDED),
+        1 => Ok(LexActivatorStatusCode::LA_FAIL),
+        _ => Err(LexActivatorErrorCode::from(status)),
     }
 }
 
@@ -1575,10 +1572,10 @@ pub fn generate_offline_activation_request(file_path: String) -> Result<(), LexA
 
 pub fn deactivate_license() -> Result<LexActivatorStatusCode, LexActivatorErrorCode> {
     let status = unsafe { extern_functions::DeactivateLicense() };
-    if status == 0 {
-        Ok(LexActivatorStatusCode::from(status))
-    } else {
-        return Err(LexActivatorErrorCode::from(status));
+    match status {
+        0 => Ok(LexActivatorStatusCode::LA_OK),
+        1 => Ok(LexActivatorStatusCode::LA_FAIL),
+        _ => Err(LexActivatorErrorCode::from(status)),
     }
 }
 
@@ -1592,7 +1589,7 @@ pub fn deactivate_license() -> Result<LexActivatorStatusCode, LexActivatorErrorC
 ///
 /// Returns `Ok(())` if the offline deactivation request file generation is successful. If an error occurs, an `Err` containing the `LexActivatorErrorCode`is returned.
 
-pub fn generate_offline_deactivation_request(file_path: String) -> Result<(), LexActivatorErrorCode> {
+pub fn generate_offline_deactivation_request(file_path: String) -> Result<LexActivatorStatusCode, LexActivatorErrorCode> {
     let status: i32;
     #[cfg(windows)]
     {
@@ -1604,10 +1601,10 @@ pub fn generate_offline_deactivation_request(file_path: String) -> Result<(), Le
         let c_file_path: CString  = string_to_cstring(file_path)?;
         status = unsafe { extern_functions::GenerateOfflineDeactivationRequest(c_file_path.as_ptr()) };
     }
-    if status == 0 {
-        Ok(())
-    } else {
-        return Err(LexActivatorErrorCode::from(status));
+    match status {
+        0 => Ok(LexActivatorStatusCode::LA_OK),
+        1 => Ok(LexActivatorStatusCode::LA_FAIL),
+        _ => Err(LexActivatorErrorCode::from(status)),
     }
 }
 
@@ -1625,10 +1622,13 @@ pub fn generate_offline_deactivation_request(file_path: String) -> Result<(), Le
 
 pub fn is_license_genuine() -> Result<LexActivatorStatusCode, LexActivatorErrorCode> {
     let status = unsafe { extern_functions::IsLicenseGenuine() };
-    if status == 0 {
-        Ok(LexActivatorStatusCode::from(status))
-    } else {
-        return Err(LexActivatorErrorCode::from(status));
+    match status {
+        0 => Ok(LexActivatorStatusCode::LA_OK),
+        20 => Ok(LexActivatorStatusCode::LA_EXPIRED),
+        21 => Ok(LexActivatorStatusCode::LA_SUSPENDED),
+        22 => Ok(LexActivatorStatusCode::LA_GRACE_PERIOD_OVER),
+        1 => Ok(LexActivatorStatusCode::LA_FAIL),
+        _ => Err(LexActivatorErrorCode::from(status)),
     }
 }
 
@@ -1644,10 +1644,13 @@ pub fn is_license_genuine() -> Result<LexActivatorStatusCode, LexActivatorErrorC
 
 pub fn is_license_valid() -> Result<LexActivatorStatusCode, LexActivatorErrorCode> {
     let status = unsafe { extern_functions::IsLicenseValid() };
-    if status == 0 {
-        Ok(LexActivatorStatusCode::from(status))
-    } else {
-        return Err(LexActivatorErrorCode::from(status));
+    match status {
+        0 => Ok(LexActivatorStatusCode::LA_OK),
+        20 => Ok(LexActivatorStatusCode::LA_EXPIRED),
+        21 => Ok(LexActivatorStatusCode::LA_SUSPENDED),
+        22 => Ok(LexActivatorStatusCode::LA_GRACE_PERIOD_OVER),
+        1 => Ok(LexActivatorStatusCode::LA_FAIL),
+        _ => Err(LexActivatorErrorCode::from(status)),
     }
 }
 
@@ -1661,10 +1664,11 @@ pub fn is_license_valid() -> Result<LexActivatorStatusCode, LexActivatorErrorCod
 
 pub fn activate_trial() -> Result<LexActivatorStatusCode, LexActivatorErrorCode> {
     let status = unsafe { extern_functions::ActivateTrial() };
-    if status == 0 {
-        Ok(LexActivatorStatusCode::from(status))
-    } else {
-        return Err(LexActivatorErrorCode::from(status));
+    match status {
+        0 => Ok(LexActivatorStatusCode::LA_OK),
+        25 => Ok(LexActivatorStatusCode::LA_TRIAL_EXPIRED),
+        1 => Ok(LexActivatorStatusCode::LA_FAIL),
+        _ => Err(LexActivatorErrorCode::from(status)),
     }
 }
 
@@ -1678,7 +1682,7 @@ pub fn activate_trial() -> Result<LexActivatorStatusCode, LexActivatorErrorCode>
 /// 
 /// Returns `Ok(LexActivatorStatusCode)` with the status code `LexActivatorStatusCode::LA_OK` if the trial has started successfully. If an error occurs, an `Err` containing the `LexActivatorErrorCode`is returned.
 
-pub fn activate_trial_offline(file_path: String) -> Result<(), LexActivatorErrorCode> {
+pub fn activate_trial_offline(file_path: String) -> Result<LexActivatorStatusCode, LexActivatorErrorCode> {
     let status: i32;
     #[cfg(windows)]
     {
@@ -1690,10 +1694,11 @@ pub fn activate_trial_offline(file_path: String) -> Result<(), LexActivatorError
         let c_file_path: CString  = string_to_cstring(file_path)?;
         status = unsafe { extern_functions::ActivateTrialOffline(c_file_path.as_ptr()) };
     }
-    if status == 0 {
-        Ok(())
-    } else {
-        return Err(LexActivatorErrorCode::from(status));
+    match status {
+        0 => Ok(LexActivatorStatusCode::LA_OK),
+        25 => Ok(LexActivatorStatusCode::LA_TRIAL_EXPIRED),
+        1 => Ok(LexActivatorStatusCode::LA_FAIL),
+        _ => Err(LexActivatorErrorCode::from(status)),
     }
 }
 
@@ -1736,10 +1741,11 @@ pub fn generate_offline_trial_activation_request(file_path: String) -> Result<()
 
 pub fn is_trial_genuine() -> Result<LexActivatorStatusCode, LexActivatorErrorCode> {
     let status = unsafe { extern_functions::IsTrialGenuine() };
-    if status == 0 {
-        Ok(LexActivatorStatusCode::from(status))
-    } else {
-        return Err(LexActivatorErrorCode::from(status));
+    match status {
+        0 => Ok(LexActivatorStatusCode::LA_OK),
+        25 => Ok(LexActivatorStatusCode::LA_TRIAL_EXPIRED),
+        1 => Ok(LexActivatorStatusCode::LA_FAIL),
+        _ => Err(LexActivatorErrorCode::from(status)),
     }
 }
 
@@ -1760,10 +1766,11 @@ pub fn is_trial_genuine() -> Result<LexActivatorStatusCode, LexActivatorErrorCod
 pub fn activate_local_trial(trial_length: u32) -> Result<LexActivatorStatusCode, LexActivatorErrorCode> {
     let c_trial_length: c_uint = trial_length as c_uint;
     let status = unsafe { extern_functions::ActivateLocalTrial(c_trial_length) };
-    if status == 0 {
-        Ok(LexActivatorStatusCode::from(status))
-    } else {
-        return Err(LexActivatorErrorCode::from(status));
+    match status {
+        0 => Ok(LexActivatorStatusCode::LA_OK),
+        26 => Ok(LexActivatorStatusCode::LA_LOCAL_TRIAL_EXPIRED),
+        1 => Ok(LexActivatorStatusCode::LA_FAIL),
+        _ => Err(LexActivatorErrorCode::from(status)),
     }
 }
 
@@ -1779,10 +1786,11 @@ pub fn activate_local_trial(trial_length: u32) -> Result<LexActivatorStatusCode,
 
 pub fn is_local_trial_genuine() -> Result<LexActivatorStatusCode, LexActivatorErrorCode> {
     let status = unsafe { extern_functions::IsLocalTrialGenuine() };
-    if status == 0 {
-        Ok(LexActivatorStatusCode::from(status))
-    } else {
-        return Err(LexActivatorErrorCode::from(status));
+    match status {
+        0 => Ok(LexActivatorStatusCode::LA_OK),
+        26 => Ok(LexActivatorStatusCode::LA_LOCAL_TRIAL_EXPIRED),
+        1 => Ok(LexActivatorStatusCode::LA_FAIL),
+        _ => Err(LexActivatorErrorCode::from(status)),
     }
 }
 
@@ -1800,13 +1808,13 @@ pub fn is_local_trial_genuine() -> Result<LexActivatorStatusCode, LexActivatorEr
 /// 
 /// Returns `Ok(())` if the trial has started successfully. If an error occurs, an `Err` containing the `LexActivatorErrorCode`is returned.
 
-pub fn extend_local_trial(trial_extension_length: u32) -> Result<(), LexActivatorErrorCode> {
+pub fn extend_local_trial(trial_extension_length: u32) -> Result<LexActivatorStatusCode, LexActivatorErrorCode> {
     let c_trial_extension_length: c_uint = trial_extension_length as c_uint;
     let status = unsafe { extern_functions::ExtendLocalTrial(c_trial_extension_length) };
-    if status == 0 {
-        Ok(())
-    } else {
-        return Err(LexActivatorErrorCode::from(status));
+    match status {
+        0 => Ok(LexActivatorStatusCode::LA_OK),
+        1 => Ok(LexActivatorStatusCode::LA_FAIL),
+        _ => Err(LexActivatorErrorCode::from(status)),
     }
 }
 

@@ -1,46 +1,9 @@
 
-use std::ffi::*;
+use std::ffi::{ c_char, CStr, CString, NulError};
 
-use crate::{error_code::LexActivatorErrorCode};
+// use crate::{error_code::LexActivatorErrorCode};
 
 // --------------------------- String operations ------------------------
-
-// fn string_to_wstring(key: &str) -> *const u16 {
-//     let utf16: Vec<u16> = key.encode_utf16().chain(std::iter::once(0)).collect();
-//     utf16.as_ptr()
-// }
-
-// diff between unwrap() and expect() or the above method match{} lies only in error handling as unwrap simply returns the default
-// msg of the error while expect() allows us to specify the error msg. They all panic iof the conversion faisl due to some error.
-
-pub fn string_to_cstring_a(key: &str) -> CString {
-    let key_cstring: CString = CString::new(key).unwrap();
-    key_cstring
-}
-
-pub fn string_to_cstringx(key: &str) -> CString {
-    let license_key_result: Result<CString, NulError> = CString::new(key);
-    let c_license_key: CString = match license_key_result {
-        Ok(cstring) => cstring,
-        Err(err) => {
-            panic!("Failed to convert Rust string to C string: {}", err);
-            // return Err(LexActivatorErrorCode::from(err));
-        }
-    };
-    c_license_key
-}
-
-pub fn string_to_cstringnew(key: &str) -> Result<CString, LexActivatorErrorCode> {
-    let license_key_result: CString = CString::new(key)?;
-    // let c_license_key: CString = match license_key_result {
-    //     Ok(cstring) => cstring,
-    //     Err(error) => {
-    //         return Err(LexActivatorErrorCode::from(error));
-    //     }
-    // };
-    Ok(license_key_result)
-}
-
 
 pub fn string_to_cstring(mut key: String) -> Result<CString, NulError> {
     if key.contains('\0') {

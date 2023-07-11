@@ -1,5 +1,5 @@
 
-use std::ffi::*;
+use std::ffi::{c_char, c_int, c_uint};
 
 #[cfg(windows)]
 macro_rules! cstrtype {
