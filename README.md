@@ -1,5 +1,9 @@
 # lexactivator
 
+[![Documentation](https://docs.rs/ahmadtest/badge.svg)](https://docs.rs/ahmadtest)
+
+[![Build Status (GitHub)](https://github.com/ahmad-kemsan/ahmadtest/actions/workflows/rust-publish.yml/badge.svg)](https://github.com/ahmad-kemsan/ahmadtest/actions/workflows/rust-publish.yml)
+
 lexactivator is a rust wrapper for cryptlex's licensing SDK that lets you implement any type of licensing model such as node-locked, hosted floating licenses, trials and much more. This SDK offers support for online and offline activations.
 
 ## Usage
@@ -18,32 +22,8 @@ Simple example usage:
 use lexactivator::*;
 
 fn main() {
-    let product_data: String = String::from("PASTE_THE CONTENT_OF_PRODUCT.DAT_FILE");
-    let product_id: String = String::from("PRODUCT_ID");
     let license_key: String = String::from("LICENSE_KEY");
-    let mut result: Result<(), LexActivatorError> = lexactivator::set_product_data(product_data);
-    match result {
-    Ok(()) => {
-        // Product data set successfully
-        println!("Product data set successfully.");
-    }
-    Err(error) => {
-        // Error occurred while setting product data
-        println!("Error while setting product data: {:?}", error);
-    }
-    }
-    result = lexactivator::set_product_id(product_id, PermissionFlags::LA_USER);
-    match result {
-    Ok(()) => {
-        // Product Id set successfully
-        println!("Product id set successfully.");
-    }
-    Err(error) => {
-        // Error occurred while setting product id
-        println!("Error while setting product id: {:?}", error);
-    }
-    }
-    result = lexactivator::set_license_key(license_key);
+    let result = lexactivator::set_license_key(license_key);
     match result {
     Ok(()) => {
         // License Key set successfully
@@ -69,7 +49,7 @@ fn main() {
     }
 
 }
-
+```
 ## License
 
 This project is licensed under 
