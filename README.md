@@ -2,6 +2,7 @@
 
 [![Documentation](https://docs.rs/ahmadtest/badge.svg)](https://docs.rs/ahmadtest)
 [![Build Status (GitHub)](https://github.com/ahmad-kemsan/ahmadtest/actions/workflows/rust-publish.yml/badge.svg)](https://github.com/ahmad-kemsan/ahmadtest/actions/workflows/rust-publish.yml)
+[![Latest Version](https://img.shields.io/crates/v/ahmadtest.svg)](https://crates.io/crates/ahmadtest)
 
 lexactivator is a rust wrapper for cryptlex's licensing SDK that lets you implement any type of licensing model such as node-locked, hosted floating licenses, trials and much more. This SDK offers support for online and offline activations.
 
