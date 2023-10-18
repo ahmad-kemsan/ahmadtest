@@ -2,11 +2,6 @@ name: Build @rust package
 
 on:
   workflow_dispatch:
-    inputs:
-      packageVersion:
-        description: 'Package Version'
-        required: true
-        default: ''
 
 jobs:
   update-version:
